@@ -1,0 +1,15 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "test": "vitest run",
+    "lint": "biome check src",
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
