@@ -10,7 +10,7 @@
   "scripts": {
     "bootstrap": "pnpm install",
     "build": "turbo run build",
-    "test": "turbo run test",
+    "test": "turbo run test --",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "ci": "pnpm bootstrap && pnpm lint && pnpm typecheck && pnpm test",
