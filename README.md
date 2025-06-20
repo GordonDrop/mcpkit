@@ -2,4 +2,4 @@
 
 ## TODO
 
-- add changelog
+ Add readme
