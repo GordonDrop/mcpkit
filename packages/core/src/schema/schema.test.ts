@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { s } from '../src/schema/zod';
+import { s } from './zod';
 
 describe('Schema adapter', () => {
   const userSchema = s(z.object({ id: z.number(), name: z.string() }));

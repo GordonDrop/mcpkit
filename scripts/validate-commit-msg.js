@@ -17,7 +17,6 @@
  */
 
 const fs = require('fs');
-const path = require('path');
 
 // Valid commit types
 const VALID_TYPES = [
@@ -147,8 +146,8 @@ function main() {
     console.error('❌ Invalid commit message:');
     console.error(result.error);
     console.error('\nExamples of valid commit messages:');
-    console.error('  feat(core): добавить новую функцию X');
-    console.error('  fix(cli, server): исправить ошибку Y');
+    console.error('  feat(core): add new function X');
+    console.error('  fix(cli, server): fix error Y');
     console.error('  chore: обновить dev-зависимости');
     console.error('  docs(transport-stdio): update API documentation');
     process.exit(1);

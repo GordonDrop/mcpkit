@@ -1,8 +1,8 @@
 import { describe, it } from 'vitest';
 import { expectType } from 'tsd';
 import { z } from 'zod';
-import { s } from '../src/schema/zod';
-import type { ToolSpec, ResourceSpec, PromptSpec, Transport } from '../src';
+import { s } from '../schema/zod';
+import type { ToolSpec, ResourceSpec, PromptSpec, Transport } from '..';
 
 describe('Contracts', () => {
   it('should have sound ToolSpec type', () => {
