@@ -1,15 +1,49 @@
 {
-  "name": "core",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@mcpkit/core",
+  "version": "0.1.0",
+  "description": "Core components for MCPKit",
+  "keywords": [
+    "mcpkit",
+    "core"
+  ],
+  "license": "MIT",
+  "author": "Konstantin Simanov",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GordonDrop/mcpkit.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/GordonDrop/mcpkit/issues"
+  },
+  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/core#readme",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsup src/index.ts --format esm,cjs --dts",
     "test": "vitest run",
+    "test:ci": "vitest run --coverage",
     "lint": "biome check src",
     "typecheck": "tsc -p . --noEmit"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "peerDependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "1.6.0",
+    "tsup": "^8.0.2"
+  },
+  "dependencies": {
+    "zod-to-json-schema": "^3.24.5"
+  },
+  "tsd": {
+    "directory": "tests"
+  }
 }

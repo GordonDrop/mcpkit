@@ -8,7 +8,12 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": [".coverage/**"],
+      "outputs": ["coverage/**"],
+      "cache": true
+    },
+    "test:ci": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
       "cache": true
     },
     "lint": {

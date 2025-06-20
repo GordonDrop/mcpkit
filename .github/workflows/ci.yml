@@ -27,3 +27,5 @@ jobs:
         run: pnpm typecheck
       - name: Test
         run: pnpm test -- --run
+      - name: Test Coverage
+        run: pnpm test:ci
