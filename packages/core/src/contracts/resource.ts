@@ -1,1 +1,5 @@
-export interface ResourceSpec {}
+export interface ResourceSpec {
+  name: string;
+  uri: string;
+  title?: string;
+}
