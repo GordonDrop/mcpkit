@@ -9,15 +9,18 @@ const { validateCommitMessage } = require('./validate-commit-msg.js');
 // Test cases
 const testCases = [
   // Valid cases
-  { message: 'feat(core): добавить новую функцию X', expected: true, description: 'Valid feat with Russian description' },
-  { message: 'fix(cli, server): исправить ошибку Y', expected: true, description: 'Valid fix with multiple scopes' },
-  { message: 'chore: обновить dev-зависимости', expected: true, description: 'Valid chore without scope' },
-  { message: 'docs(transport-stdio): update API documentation', expected: true, description: 'Valid docs with English description' },
+  { message: 'feat(core): add new function X', expected: true, description: 'Valid feat with single scope' },
+  { message: 'fix(cli, server): fix error Y', expected: true, description: 'Valid fix with multiple scopes' },
+  { message: 'chore: update dev dependencies', expected: true, description: 'Valid chore without scope' },
+  { message: 'docs(transport-stdio): update API documentation', expected: true, description: 'Valid docs with scope' },
   { message: 'test(core): add unit tests for validation', expected: true, description: 'Valid test commit' },
   { message: 'refactor(cli): improve code structure', expected: true, description: 'Valid refactor commit' },
   { message: 'ci: update GitHub Actions workflow', expected: true, description: 'Valid CI commit without scope' },
   { message: 'perf(server): optimize request handling', expected: true, description: 'Valid performance improvement' },
-  
+  { message: 'style(core): format code according to standards', expected: true, description: 'Valid style commit' },
+  { message: 'build: update build configuration', expected: true, description: 'Valid build commit without scope' },
+  { message: 'revert(cli): revert previous changes', expected: true, description: 'Valid revert commit' },
+
   // Invalid cases
   { message: '', expected: false, description: 'Empty message' },
   { message: 'invalid message format', expected: false, description: 'No conventional format' },
@@ -25,8 +28,10 @@ const testCases = [
   { message: 'invalidtype(core): some change', expected: false, description: 'Invalid type' },
   { message: 'feat(core):', expected: false, description: 'Missing description' },
   { message: 'feat(core): ab', expected: false, description: 'Description too short' },
-  { message: 'feat(pkg-a): should not work', expected: false, description: 'Example scope should be rejected' },
+  { message: 'feat(unknown): should not work', expected: false, description: 'Unknown scope should be rejected' },
   { message: 'feat(core, invalid): mixed valid and invalid scopes', expected: false, description: 'Mixed valid/invalid scopes' },
+  { message: 'feat core: missing parentheses', expected: false, description: 'Invalid format - missing parentheses' },
+  { message: 'FEAT(core): uppercase type', expected: false, description: 'Invalid format - uppercase type' },
 ];
 
 console.log('🧪 Testing commit message validation...\n');
