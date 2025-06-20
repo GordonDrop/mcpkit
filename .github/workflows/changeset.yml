@@ -1,0 +1,78 @@
+name: Changeset Version & Changelog
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  version:
+    # Only run on main branch pushes, not on PRs
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history for proper changelog generation
+          fetch-depth: 0
+          # Use a token that can trigger other workflows
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for changesets
+        id: check-changesets
+        run: |
+          if [ -n "$(ls -A .changeset/*.md 2>/dev/null | grep -v README.md)" ]; then
+            echo "has-changesets=true" >> $GITHUB_OUTPUT
+            echo "Found changesets to process"
+          else
+            echo "has-changesets=false" >> $GITHUB_OUTPUT
+            echo "No changesets found"
+          fi
+
+      - name: Create Release Pull Request or Publish
+        if: steps.check-changesets.outputs.has-changesets == 'true'
+        uses: changesets/action@v1
+        with:
+          # Run the version command to update package.json files and generate changelogs
+          version: npx changeset version
+          # Don't publish since we're not publishing to any registry
+          publish: echo "Skipping publish step - this monorepo doesn't publish packages"
+          # Commit message that follows conventional commit format
+          commit: "chore: version packages and update changelogs"
+          title: "chore: version packages and update changelogs"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: steps.check-changesets.outputs.has-changesets == 'true'
+        run: |
+          echo "✅ Changesets processed successfully!"
+          echo "📦 Package versions updated"
+          echo "📝 Changelogs generated"
+          echo "🔄 Changes committed to main branch"
+
+      - name: No changesets found
+        if: steps.check-changesets.outputs.has-changesets == 'false'
+        run: |
+          echo "ℹ️  No changesets found - skipping version bump"
+          echo "To create a changeset, run: pnpm changeset"

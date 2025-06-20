@@ -2,7 +2,7 @@
   "name": "mcpkit-monorepo",
   "private": true,
   "packageManager": "pnpm@9.1.0",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "workspaces": [
     "packages/*",
     "examples/*"
@@ -11,16 +11,23 @@
     "bootstrap": "pnpm install",
     "build": "turbo run build",
     "test": "turbo run test --",
+    "test:ci": "turbo run test:ci --",
+    "test:types": "cd packages/core && tsd",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "ci": "pnpm bootstrap && pnpm lint && pnpm typecheck && pnpm test",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "changeset": "changeset",
+    "version": "npx changeset version",
+    "changelog": "npx changeset version"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.5",
     "@types/node": "^20.12.0",
     "biome": "^0.3.3",
     "husky": "^8.0.0",
     "lint-staged": "^15.0.0",
+    "tsd": "^0.32.0",
     "turbo": "^2.0.0",
     "typescript": "^5.5.0",
     "vitest": "^1.6.1"
