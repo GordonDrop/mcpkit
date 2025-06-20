@@ -16,7 +16,10 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "ci": "pnpm bootstrap && pnpm lint && pnpm typecheck && pnpm test",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "changeset": "changeset",
+    "version": "npx changeset version",
+    "changelog": "npx changeset version"
   },
   "devDependencies": {
     "@types/node": "^20.12.0",
