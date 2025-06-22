@@ -161,6 +161,24 @@ describe('McpRuntime', () => {
       });
       expect(result2).toBe('Hello Eve!');
     });
+
+    it('should handle template rendering with non-object params', async () => {
+      const simplePrompt: PromptSpec = {
+        name: 'simple-prompt',
+        template: 'Hello {{name}}!',
+      };
+
+      registry.addPrompt(simplePrompt);
+
+      const result1 = await runtime.renderPrompt('simple-prompt', null);
+      expect(result1).toBe('Hello {{name}}!');
+
+      const result2 = await runtime.renderPrompt('simple-prompt', undefined);
+      expect(result2).toBe('Hello {{name}}!');
+
+      const result3 = await runtime.renderPrompt('simple-prompt', 'not an object');
+      expect(result3).toBe('Hello {{name}}!');
+    });
   });
 
   describe('Resource access', () => {
@@ -183,8 +201,66 @@ describe('McpRuntime', () => {
       await expect(runtime.getResource('unsupported-resource')).rejects.toThrow(ExecutionFailure);
     });
 
-    // Note: Testing file:// and http:// schemes would require mocking fs and fetch
-    // These are integration tests that would be better suited for a separate test suite
+    it('should load http:// resources', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve('http content'),
+      });
+      global.fetch = mockFetch;
+
+      const httpResource: ResourceSpec = {
+        name: 'http-resource',
+        title: 'HTTP Resource',
+        uri: 'http://example.com/data.txt',
+      };
+
+      registry.addResource(httpResource);
+
+      const result = await runtime.getResource('http-resource');
+      expect(result).toBe('http content');
+      expect(mockFetch).toHaveBeenCalledWith('http://example.com/data.txt');
+    });
+
+    it('should load https:// resources', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve('https content'),
+      });
+      global.fetch = mockFetch;
+
+      const httpsResource: ResourceSpec = {
+        name: 'https-resource',
+        title: 'HTTPS Resource',
+        uri: 'https://example.com/data.txt',
+      };
+
+      registry.addResource(httpsResource);
+
+      const result = await runtime.getResource('https-resource');
+      expect(result).toBe('https content');
+      expect(mockFetch).toHaveBeenCalledWith('https://example.com/data.txt');
+    });
+
+    it('should handle HTTP errors', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      });
+      global.fetch = mockFetch;
+
+      const httpResource: ResourceSpec = {
+        name: 'http-error-resource',
+        title: 'HTTP Error Resource',
+        uri: 'http://example.com/notfound.txt',
+      };
+
+      registry.addResource(httpResource);
+
+      await expect(runtime.getResource('http-error-resource')).rejects.toThrow(
+        'HTTP 404: Not Found',
+      );
+    });
   });
 
   describe('createMcpRuntime factory function', () => {
