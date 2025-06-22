@@ -23,30 +23,31 @@ export class DefaultMcpRuntime implements McpRuntime {
   ) {}
 
   async executeTool<I, O>(name: string, input: unknown): Promise<O> {
-    console.log(`[runtime] Executing tool: ${name}`);
+    const { logger } = this.executionCtx;
+    logger.info({ tool: name }, '[runtime] Executing tool');
 
     const tool = this.registry.getTool(name);
     if (!tool) {
-      console.error(`[tool:${name}] Tool not found`);
+      logger.error({ tool: name }, 'Tool not found');
       throw new ToolNotFoundError(name);
     }
 
     try {
       const validatedInput = tool.input.parse(input) as I;
-      console.log(`[tool:${name}] Input validated successfully`);
+      logger.info({ tool: name }, 'Input validated successfully');
 
       const result = await tool.handler(validatedInput, this.executionCtx);
-      console.log(`[tool:${name}] Execution completed successfully`);
+      logger.info({ tool: name }, 'Execution completed successfully');
 
       return result as O;
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'ZodError' || error.message.includes('validation')) {
-          console.error(`[tool:${name}] Invalid input`, error);
+          logger.error({ tool: name, error: error.message }, 'Invalid input');
           throw new InvalidInputError(name, 'tool', error);
         }
 
-        console.error(`[tool:${name}] Execution failed`, error);
+        logger.error({ tool: name, error: error.message }, 'Execution failed');
         throw new ExecutionFailure(name, 'tool', error);
       }
 
@@ -55,11 +56,12 @@ export class DefaultMcpRuntime implements McpRuntime {
   }
 
   async renderPrompt<P>(name: string, params: unknown): Promise<string> {
-    console.log(`[runtime] Rendering prompt: ${name}`);
+    const { logger } = this.executionCtx;
+    logger.info({ prompt: name }, '[runtime] Rendering prompt');
 
     const prompt = this.registry.getPrompt(name);
     if (!prompt) {
-      console.error(`[prompt:${name}] Prompt not found`);
+      logger.error({ prompt: name }, 'Prompt not found');
       throw new PromptNotFoundError(name);
     }
 
@@ -67,23 +69,23 @@ export class DefaultMcpRuntime implements McpRuntime {
       let validatedParams: P;
       if (prompt.params) {
         validatedParams = prompt.params.parse(params) as P;
-        console.log(`[prompt:${name}] Parameters validated successfully`);
+        logger.info({ prompt: name }, 'Parameters validated successfully');
       } else {
         validatedParams = params as P;
       }
 
       const renderedText = this.renderTemplate(prompt.template, validatedParams);
 
-      console.log(`[prompt:${name}] Rendering completed successfully`);
+      logger.info({ prompt: name }, 'Rendering completed successfully');
       return renderedText;
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'ZodError' || error.message.includes('validation')) {
-          console.error(`[prompt:${name}] Invalid parameters`, error);
+          logger.error({ prompt: name, error: error.message }, 'Invalid parameters');
           throw new InvalidInputError(name, 'prompt', error);
         }
 
-        console.error(`[prompt:${name}] Rendering failed`, error);
+        logger.error({ prompt: name, error: error.message }, 'Rendering failed');
         throw new ExecutionFailure(name, 'prompt', error);
       }
 
@@ -92,18 +94,19 @@ export class DefaultMcpRuntime implements McpRuntime {
   }
 
   async getResource(name: string): Promise<string> {
-    console.log(`[runtime] Getting resource: ${name}`);
+    const { logger } = this.executionCtx;
+    logger.info({ resource: name }, '[runtime] Getting resource');
 
     const resource = this.registry.getResource(name);
     if (!resource) {
-      console.error(`[resource:${name}] Resource not found`);
+      logger.error({ resource: name }, 'Resource not found');
       throw new ResourceNotFoundError(name);
     }
 
     try {
       const url = new URL(resource.uri);
       if (!['file:', 'http:', 'https:'].includes(url.protocol)) {
-        console.error(`[resource:${name}] Unsupported URI scheme: ${url.protocol}`);
+        logger.error({ resource: name, protocol: url.protocol }, 'Unsupported URI scheme');
         throw new ExecutionFailure(
           name,
           'resource',
@@ -113,7 +116,7 @@ export class DefaultMcpRuntime implements McpRuntime {
 
       const content = await this.loadResource(resource.uri);
 
-      console.log(`[resource:${name}] Resource loaded successfully`);
+      logger.info({ resource: name }, 'Resource loaded successfully');
       return content;
     } catch (error) {
       if (error instanceof ExecutionFailure) {
@@ -121,7 +124,7 @@ export class DefaultMcpRuntime implements McpRuntime {
       }
 
       if (error instanceof Error) {
-        console.error(`[resource:${name}] Loading failed`, error);
+        logger.error({ resource: name, error: error.message }, 'Loading failed');
         throw new ExecutionFailure(name, 'resource', error);
       }
 

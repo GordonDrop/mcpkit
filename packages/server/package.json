@@ -1,19 +1,29 @@
 {
-  "name": "server",
-  "version": "0.1.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@mcpkit/server",
+  "version": "0.0.1",
+  "description": "Chainable builder API for creating MCP servers",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "test:ci": "vitest run",
     "test:types": "echo 'No type definition tests for this package'",
     "lint": "npx @biomejs/biome check src",
     "typecheck": "tsc -p . --noEmit"
   },
-  "keywords": [],
+  "keywords": [
+    "mcpkit",
+    "server",
+    "builder",
+    "mcp"
+  ],
   "author": "Konstantin Simanov",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/GordonDrop/mcpkit.git",
@@ -22,5 +32,14 @@
   "bugs": {
     "url": "https://github.com/GordonDrop/mcpkit/issues"
   },
-  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/server#readme"
+  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/server#readme",
+  "peerDependencies": {
+    "@mcpkit/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@mcpkit/core": "workspace:^",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "zod": "^3.22.4"
+  }
 }
