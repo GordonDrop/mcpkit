@@ -1,5 +1,5 @@
 // packages/core/src/schema/zod.ts
-import type { ZodTypeAny, z } from 'zod';
+import { type ZodTypeAny, z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import type { Schema } from '.';
 
@@ -14,3 +14,5 @@ export class ZodSchema<T> implements Schema<T> {
 }
 
 export const s = <T>(zod: z.ZodType<T>): Schema<T> => new ZodSchema<T>(zod);
+
+export { z };

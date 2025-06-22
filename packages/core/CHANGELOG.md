@@ -1,6 +1,6 @@
 # @mcpkit/core
 
-## 0.1.2
+## 0.0.2
 
 ### Patch Changes
 
@@ -16,7 +16,7 @@
 
   This new package provides a convenient fluent API for building MCP servers, making it easier to configure and set up servers with tools, prompts, and resources in a chainable manner.
 
-## 0.1.1 – 2025-06-19
+## 0.0.1 – 2025-06-19
 
 ### Added
 
@@ -31,7 +31,7 @@
 
 - Vitest suite for schema parse / json round-trip.
 
-## 0.1.0
+## 0.0.0
 
 ### Patch Changes
 
