@@ -23,6 +23,11 @@
     "typecheck": {
       "outputs": [],
       "cache": true
+    },
+    "test:types": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "cache": true
     }
   }
 }

@@ -12,7 +12,7 @@
     "build": "turbo run build",
     "test": "turbo run test --",
     "test:ci": "turbo run test:ci --",
-    "test:types": "cd packages/core && tsd",
+    "test:types": "turbo run test:types",
     "lint": "turbo run lint",
     "lint:all": "npx @biomejs/biome check .",
     "lint:fix": "npx @biomejs/biome check --write .",

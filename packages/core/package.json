@@ -30,6 +30,7 @@
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "test": "vitest run",
     "test:ci": "vitest run --coverage",
+    "test:types": "tsd",
     "lint": "biome check src",
     "typecheck": "tsc -p . --noEmit"
   },
