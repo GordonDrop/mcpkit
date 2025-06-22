@@ -11,8 +11,8 @@ import {
 import type { Registry } from './registry';
 
 export interface McpRuntime {
-  executeTool<I = unknown, O = unknown>(name: string, input: I): Promise<O>;
-  renderPrompt<P = unknown>(name: string, params: P): Promise<string>;
+  executeTool<I, O>(name: string, input: unknown): Promise<O>;
+  renderPrompt<P>(name: string, params: unknown): Promise<string>;
   getResource(name: string): Promise<string>;
 }
 
@@ -54,7 +54,7 @@ export class DefaultMcpRuntime implements McpRuntime {
     }
   }
 
-  async renderPrompt<P = unknown>(name: string, params: unknown): Promise<string> {
+  async renderPrompt<P>(name: string, params: unknown): Promise<string> {
     console.log(`[runtime] Rendering prompt: ${name}`);
 
     const prompt = this.registry.getPrompt(name);
@@ -101,11 +101,25 @@ export class DefaultMcpRuntime implements McpRuntime {
     }
 
     try {
+      const url = new URL(resource.uri);
+      if (!['file:', 'http:', 'https:'].includes(url.protocol)) {
+        console.error(`[resource:${name}] Unsupported URI scheme: ${url.protocol}`);
+        throw new ExecutionFailure(
+          name,
+          'resource',
+          new Error(`Unsupported URI scheme: ${url.protocol}`),
+        );
+      }
+
       const content = await this.loadResource(resource.uri);
 
       console.log(`[resource:${name}] Resource loaded successfully`);
       return content;
     } catch (error) {
+      if (error instanceof ExecutionFailure) {
+        throw error;
+      }
+
       if (error instanceof Error) {
         console.error(`[resource:${name}] Loading failed`, error);
         throw new ExecutionFailure(name, 'resource', error);
@@ -128,32 +142,25 @@ export class DefaultMcpRuntime implements McpRuntime {
   }
 
   private async loadResource(uri: string): Promise<string> {
-    try {
-      const url = new URL(uri);
+    const url = new URL(uri);
 
-      switch (url.protocol) {
-        case 'file:': {
-          const content = await readFile(url, 'utf-8');
-          return content;
-        }
-
-        case 'http:':
-        case 'https:': {
-          const response = await fetch(uri);
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          return await response.text();
-        }
-
-        default:
-          throw new Error(`Unsupported URI scheme: ${url.protocol}`);
+    switch (url.protocol) {
+      case 'file:': {
+        const content = await readFile(url, 'utf-8');
+        return content;
       }
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Failed to load resource from ${uri}: ${error.message}`);
+
+      case 'http:':
+      case 'https:': {
+        const response = await fetch(uri);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return await response.text();
       }
-      throw error;
+
+      default:
+        throw new Error(`Unsupported URI scheme: ${url.protocol}`);
     }
   }
 }
