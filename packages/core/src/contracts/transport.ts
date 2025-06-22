@@ -1,1 +1,1 @@
-export interface Transport {}
+export type Transport = {};

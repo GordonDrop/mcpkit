@@ -13,19 +13,23 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 9
+          version: 9.1.0
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
-      - name: Install deps
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Fix Biome permissions
+        run: chmod +x node_modules/.pnpm/@biomejs+cli-linux-x64@*/node_modules/@biomejs/cli-linux-x64/biome
+      - name: Build packages
+        run: pnpm build
       - name: Lint
         run: pnpm lint
       - name: Type-check
         run: pnpm typecheck
-      - name: Test
-        run: pnpm test -- --run
-      - name: Test Coverage
+      - name: Type definition tests
+        run: pnpm test:types
+      - name: Test with coverage
         run: pnpm test:ci

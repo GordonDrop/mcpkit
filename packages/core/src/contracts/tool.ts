@@ -18,7 +18,7 @@ export interface ToolSpec<I = unknown, O = unknown> {
   readonly name: string;
   readonly title?: string;
   readonly description?: string;
-  readonly input:  Schema<I>;
+  readonly input: Schema<I>;
   readonly output: Schema<O>;
   handler(input: I, ctx: ExecutionCtx): Promise<O>;
 }

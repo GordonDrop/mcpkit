@@ -3,43 +3,38 @@
 /**
  * Validates commit messages against conventional commit format
  * for the mcpkit project.
- * 
+ *
  * Required format: <type>(<scope>): <description>
  * - Type: feat, fix, chore, docs, style, refactor, test, ci, etc.
  * - Scope: Must be one of the actual package names (cli, core, server, transport-stdio)
  *   or multiple scopes separated by commas
  * - Description: Brief description in any language (Russian/English acceptable)
- * 
+ *
  * Examples:
  * - feat(core): добавить новую функцию X
- * - fix(cli, server): исправить ошибку Y  
+ * - fix(cli, server): исправить ошибку Y
  * - chore: обновить dev-зависимости
  */
 
-const fs = require('fs');
+const fs = require('node:fs');
 
 // Valid commit types
 const VALID_TYPES = [
-  'feat',     // New feature
-  'fix',      // Bug fix
-  'chore',    // Maintenance tasks
-  'docs',     // Documentation changes
-  'style',    // Code style changes (formatting, etc.)
+  'feat', // New feature
+  'fix', // Bug fix
+  'chore', // Maintenance tasks
+  'docs', // Documentation changes
+  'style', // Code style changes (formatting, etc.)
   'refactor', // Code refactoring
-  'test',     // Adding or updating tests
-  'ci',       // CI/CD changes
-  'perf',     // Performance improvements
-  'build',    // Build system changes
-  'revert'    // Reverting previous commits
+  'test', // Adding or updating tests
+  'ci', // CI/CD changes
+  'perf', // Performance improvements
+  'build', // Build system changes
+  'revert', // Reverting previous commits
 ];
 
 // Valid package scopes based on actual packages in this project
-const VALID_SCOPES = [
-  'cli',
-  'core', 
-  'server',
-  'transport-stdio'
-];
+const VALID_SCOPES = ['cli', 'core', 'server', 'transport-stdio'];
 
 /**
  * Validates a commit message against the conventional commit format
@@ -49,27 +44,27 @@ const VALID_SCOPES = [
 function validateCommitMessage(message) {
   // Remove any leading/trailing whitespace
   message = message.trim();
-  
+
   // Check if message is empty
   if (!message) {
     return {
       success: false,
-      error: 'Commit message cannot be empty'
+      error: 'Commit message cannot be empty',
     };
   }
 
   // Regex pattern for conventional commit format
   // Supports: type(scope): description OR type: description
   const conventionalCommitRegex = /^(\w+)(\(([^)]+)\))?: (.+)$/;
-  
+
   const match = message.match(conventionalCommitRegex);
-  
+
   if (!match) {
     return {
       success: false,
       error: `Commit message does not follow conventional commit format.
 Expected: <type>(<scope>): <description> or <type>: <description>
-Got: "${message}"`
+Got: "${message}"`,
     };
   }
 
@@ -80,21 +75,21 @@ Got: "${message}"`
     return {
       success: false,
       error: `Invalid commit type: "${type}".
-Valid types: ${VALID_TYPES.join(', ')}`
+Valid types: ${VALID_TYPES.join(', ')}`,
     };
   }
 
   // Validate scope if present
   if (scopeString) {
-    const scopes = scopeString.split(',').map(s => s.trim());
-    const invalidScopes = scopes.filter(scope => !VALID_SCOPES.includes(scope));
-    
+    const scopes = scopeString.split(',').map((s) => s.trim());
+    const invalidScopes = scopes.filter((scope) => !VALID_SCOPES.includes(scope));
+
     if (invalidScopes.length > 0) {
       return {
         success: false,
         error: `Invalid scope(s): "${invalidScopes.join(', ')}".
 Valid scopes: ${VALID_SCOPES.join(', ')}
-You can also use multiple scopes separated by commas: feat(cli, core): description`
+You can also use multiple scopes separated by commas: feat(cli, core): description`,
       };
     }
   }
@@ -103,13 +98,13 @@ You can also use multiple scopes separated by commas: feat(cli, core): descripti
   if (!description || description.length < 3) {
     return {
       success: false,
-      error: 'Commit description must be at least 3 characters long'
+      error: 'Commit description must be at least 3 characters long',
     };
   }
 
   return {
     success: true,
-    message: 'Commit message is valid'
+    message: 'Commit message is valid',
   };
 }
 
@@ -136,9 +131,9 @@ function main() {
 
   // Extract the first line (actual commit message, ignore comments)
   const firstLine = commitMessage.split('\n')[0];
-  
+
   const result = validateCommitMessage(firstLine);
-  
+
   if (result.success) {
     console.log('✅ Commit message is valid');
     process.exit(0);

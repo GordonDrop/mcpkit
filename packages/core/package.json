@@ -30,7 +30,8 @@
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "test": "vitest run",
     "test:ci": "vitest run --coverage",
-    "lint": "biome check src",
+    "test:types": "tsd",
+    "lint": "npx @biomejs/biome check src",
     "typecheck": "tsc -p . --noEmit"
   },
   "peerDependencies": {
