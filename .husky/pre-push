@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+echo "Building packages..."
+pnpm build
+
 echo "Running tests before push..."
 pnpm test
 

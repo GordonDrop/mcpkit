@@ -7,6 +7,7 @@
     "build": "tsc -p .",
     "test": "vitest run",
     "test:ci": "vitest run",
+    "test:types": "echo 'No type definition tests for this package'",
     "lint": "npx @biomejs/biome check src",
     "typecheck": "tsc -p . --noEmit"
   },
