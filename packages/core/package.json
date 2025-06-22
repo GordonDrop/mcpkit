@@ -31,7 +31,7 @@
     "test": "vitest run",
     "test:ci": "vitest run --coverage",
     "test:types": "tsd",
-    "lint": "biome check src",
+    "lint": "npx @biomejs/biome check src",
     "typecheck": "tsc -p . --noEmit"
   },
   "peerDependencies": {
