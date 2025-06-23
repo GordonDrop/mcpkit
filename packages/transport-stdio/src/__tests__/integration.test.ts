@@ -39,9 +39,15 @@ describe('Stdio Transport Integration Tests', () => {
       readable: true,
     });
 
+    const mockStdout = {
+      write: vi.fn().mockReturnValue(true),
+      writable: true,
+      destroyed: false,
+    };
+
     mockProcess = {
       stdin: mockStdin,
-      stdout: { write: vi.fn() },
+      stdout: mockStdout,
       on: vi.fn(),
       hrtime: { bigint: vi.fn().mockReturnValue(BigInt(Date.now())) },
     };
@@ -101,15 +107,15 @@ describe('Stdio Transport Integration Tests', () => {
       const mockInvoker = vi.fn();
       await simulateJsonRpcRequest('{invalid json}', mockInvoker);
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        JSON.stringify({
+      expect(mockProcess.stdout.write).toHaveBeenCalledWith(
+        `${JSON.stringify({
           jsonrpc: '2.0',
           id: null,
           error: {
             code: -32700,
             message: 'Parse error',
           },
-        }),
+        })}\n`,
       );
       expect(mockInvoker).not.toHaveBeenCalled();
     });
@@ -125,15 +131,15 @@ describe('Stdio Transport Integration Tests', () => {
 
       await simulateJsonRpcRequest(request, mockInvoker);
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        JSON.stringify({
+      expect(mockProcess.stdout.write).toHaveBeenCalledWith(
+        `${JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
           error: {
             code: -32601,
             message: 'Method not found',
           },
-        }),
+        })}\n`,
       );
       expect(mockInvoker).not.toHaveBeenCalled();
     });
@@ -152,8 +158,8 @@ describe('Stdio Transport Integration Tests', () => {
 
       await simulateJsonRpcRequest(request, mockInvoker);
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        JSON.stringify({
+      expect(mockProcess.stdout.write).toHaveBeenCalledWith(
+        `${JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
           error: {
@@ -161,7 +167,7 @@ describe('Stdio Transport Integration Tests', () => {
             message: 'Tool execution failed',
             data: 'Tool execution failed',
           },
-        }),
+        })}\n`,
       );
     });
 
@@ -178,12 +184,12 @@ describe('Stdio Transport Integration Tests', () => {
 
       await simulateJsonRpcRequest(request, mockInvoker);
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        JSON.stringify({
+      expect(mockProcess.stdout.write).toHaveBeenCalledWith(
+        `${JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
           result: { result: 8 },
-        }),
+        })}\n`,
       );
     });
   });
@@ -202,12 +208,12 @@ describe('Stdio Transport Integration Tests', () => {
 
       await simulateJsonRpcRequest(request, mockInvoker);
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        JSON.stringify({
+      expect(mockProcess.stdout.write).toHaveBeenCalledWith(
+        `${JSON.stringify({
           jsonrpc: '2.0',
           id: null,
           result: { result: 25 },
-        }),
+        })}\n`,
       );
     });
 
@@ -221,15 +227,15 @@ describe('Stdio Transport Integration Tests', () => {
 
       await simulateJsonRpcRequest(request, mockInvoker);
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        JSON.stringify({
+      expect(mockProcess.stdout.write).toHaveBeenCalledWith(
+        `${JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
           error: {
             code: -32602,
             message: 'Invalid params',
           },
-        }),
+        })}\n`,
       );
       expect(mockInvoker).not.toHaveBeenCalled();
     });

@@ -30,6 +30,16 @@ const testCases = [
     description: 'Valid docs with scope',
   },
   {
+    message: 'feat(ndjson): add NDJSON reader and writer utilities',
+    expected: true,
+    description: 'Valid feat with ndjson scope',
+  },
+  {
+    message: 'feat(ndjson,transport-stdio): integrate NDJSON utilities with transport',
+    expected: true,
+    description: 'Valid feat with multiple scopes including ndjson',
+  },
+  {
     message: 'test(core): add unit tests for validation',
     expected: true,
     description: 'Valid test commit',
