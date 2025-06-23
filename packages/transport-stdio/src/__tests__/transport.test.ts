@@ -29,12 +29,8 @@ describe('StdioTransport', () => {
 
   describe('JSON-RPC Error Constants', () => {
     it('should handle parse errors with correct error code', () => {
-      // Test that the transport class has the correct error handling structure
       const transport = new StdioTransport();
       expect(transport).toBeDefined();
-
-      // We can't easily test the private methods, but we can verify the transport
-      // implements the Transport interface correctly
       expect(transport.name).toBe('stdio');
       expect(typeof transport.start).toBe('function');
       expect(typeof transport.stop).toBe('function');
@@ -69,7 +65,6 @@ describe('StdioTransport', () => {
       const transport = new StdioTransport();
       const mockInvoker = async () => ({ content: 'test' });
 
-      // This should not throw a TypeScript error
       expect(() => transport.start(mockInvoker)).not.toThrow();
     });
   });

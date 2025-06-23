@@ -54,7 +54,6 @@ expectType<InvokeFn>(errorInvoker);
 
 // InvokeFn with type narrowing
 const typedInvoker: InvokeFn = async (ctx) => {
-  // Test type narrowing
   if (ctx.type === 'tool') {
     expectType<'tool'>(ctx.type);
   }
@@ -81,24 +80,20 @@ const fullTransport: Transport = {
   async start(invoker) {
     expectType<InvokeFn>(invoker);
   },
-  async stop() {
-    // Optional stop method
-  },
+  async stop() {},
 };
 expectType<Transport>(fullTransport);
 
 // Transport with minimal implementation (no stop method)
 const minimalTransport: Transport = {
   name: 'stdio',
-  async start() {
-    // Minimal implementation
-  },
+  async start() {},
 };
 expectType<Transport>(minimalTransport);
 
 // Transport with strictly typed name
 const strictlyTypedTransport: Transport = {
-  name: 'stdio', // Only 'stdio' is allowed
+  name: 'stdio',
   async start() {},
 };
 expectType<Transport>(strictlyTypedTransport);

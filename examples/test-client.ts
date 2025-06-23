@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { spawn } from 'child_process';
-import { resolve } from 'path';
+import { spawn } from 'node:child_process';
+import { resolve } from 'node:path';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -27,7 +27,6 @@ interface JsonRpcResponse {
 async function testStdioServer() {
   console.log('🚀 Starting MCP Server with stdio transport...\n');
 
-  // Start the server process
   const serverPath = resolve(__dirname, 'stdio-server.ts');
   const server = spawn('npx', ['tsx', serverPath], {
     stdio: ['pipe', 'pipe', 'inherit'],
@@ -36,7 +35,6 @@ async function testStdioServer() {
   let responseCount = 0;
   const expectedResponses = 4;
 
-  // Handle server responses
   server.stdout?.on('data', (data) => {
     const lines = data.toString().trim().split('\n');
     for (const line of lines) {
@@ -51,7 +49,7 @@ async function testStdioServer() {
             server.kill();
             process.exit(0);
           }
-        } catch (error) {
+        } catch {
           console.error('❌ Failed to parse response:', line);
         }
       }
@@ -67,10 +65,8 @@ async function testStdioServer() {
     console.log(`\n🏁 Server exited with code ${code}`);
   });
 
-  // Wait a moment for server to start
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  // Test cases
   const testCases: JsonRpcRequest[] = [
     {
       jsonrpc: '2.0',
@@ -110,14 +106,12 @@ async function testStdioServer() {
     },
   ];
 
-  // Send test requests
   for (const testCase of testCases) {
     console.log('📤 Sending request:', JSON.stringify(testCase, null, 2));
-    server.stdin?.write(JSON.stringify(testCase) + '\n');
+    server.stdin?.write(`${JSON.stringify(testCase)}\n`);
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  // Cleanup after timeout
   setTimeout(() => {
     console.log('\n⏰ Test timeout reached');
     server.kill();

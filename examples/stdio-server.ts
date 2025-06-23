@@ -54,5 +54,4 @@ const server = createMcpServer()
     },
   });
 
-// Start the server with stdio transport
 server.listen().catch(console.error);
