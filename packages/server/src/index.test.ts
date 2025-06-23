@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createMcpServer, schema, z } from './index';
+import { createMcpServer, type Middleware, type Plugin, schema, z } from './index';
 
 describe('@mcpkit/server', () => {
   describe('createMcpServer', () => {
@@ -148,11 +148,15 @@ describe('@mcpkit/server', () => {
     });
   });
 
-  describe('Middleware no-op', () => {
-    it('should accept middleware but not affect runtime behavior', async () => {
+  describe('Middleware integration', () => {
+    it('should accept middleware and integrate with runtime', async () => {
+      const testMiddleware: Middleware = (next) => async (ctx) => {
+        const result = await next(ctx);
+        return result;
+      };
+
       const server = createMcpServer()
-        .use('some-middleware')
-        .use({ type: 'middleware', config: {} })
+        .use(testMiddleware)
         .tool('test', {
           input: schema(z.string()),
           output: schema(z.string()),
@@ -162,6 +166,50 @@ describe('@mcpkit/server', () => {
 
       const result = await server.runtime.executeTool('test', 'input');
       expect(result).toBe('result: input');
+      expect(server.invoke).toBeDefined();
+      expect(typeof server.invoke).toBe('function');
+    });
+
+    it('should execute operations through the invoke function', async () => {
+      const server = createMcpServer()
+        .tool('test-tool', {
+          input: schema(z.string()),
+          output: schema(z.string()),
+          handler: async (input) => `processed: ${input}`,
+        })
+        .build();
+
+      const result = await server.invoke({
+        type: 'tool',
+        name: 'test-tool',
+        input: 'hello',
+        meta: { start: BigInt(Date.now()) },
+      });
+
+      expect(result).toEqual({ content: 'processed: hello' });
+    });
+
+    it('should handle errors through the error wrapper middleware', async () => {
+      const server = createMcpServer()
+        .tool('failing-tool', {
+          input: schema(z.string()),
+          output: schema(z.string()),
+          handler: async () => {
+            throw new Error('Tool execution failed');
+          },
+        })
+        .build();
+
+      const result = await server.invoke({
+        type: 'tool',
+        name: 'failing-tool',
+        input: 'test',
+        meta: { start: BigInt(Date.now()) },
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content).toBeInstanceOf(Error);
+      expect((result.content as Error).message).toContain('Tool execution failed');
     });
   });
 
@@ -174,6 +222,213 @@ describe('@mcpkit/server', () => {
       const testSchema = schema(z.string());
       expect(testSchema.parse('test')).toBe('test');
       expect(() => testSchema.parse(123)).toThrow();
+    });
+
+    it('should re-export middleware system types', () => {
+      // Test that types are available for import (compilation test)
+      const testMiddleware: Middleware = (next) => async (ctx) => {
+        return await next(ctx);
+      };
+
+      const testPlugin: Plugin<{ message: string }> = (srv, opts) => {
+        if (opts?.message) {
+          srv.tool('plugin-tool', {
+            input: schema(z.string()),
+            output: schema(z.string()),
+            handler: async (input) => `${opts.message}: ${input}`,
+          });
+        }
+      };
+
+      expect(typeof testMiddleware).toBe('function');
+      expect(typeof testPlugin).toBe('function');
+    });
+
+    it('should support plugin registration with re-exported types', () => {
+      const testPlugin: Plugin<{ prefix: string }> = (srv, opts) => {
+        srv.tool('plugin-added-tool', {
+          input: schema(z.string()),
+          output: schema(z.string()),
+          handler: async (input) => `${opts?.prefix || 'default'}: ${input}`,
+        });
+      };
+
+      const server = createMcpServer().register(testPlugin, { prefix: 'test' }).build();
+
+      expect(server.registry.hasTool('plugin-added-tool')).toBe(true);
+    });
+
+    it('should demonstrate complete middleware system integration', async () => {
+      // Create a logging middleware
+      const loggingMiddleware: Middleware = (next) => async (ctx) => {
+        const start = Date.now();
+        const result = await next(ctx);
+        const duration = Date.now() - start;
+        console.log(`[${ctx.type}] ${ctx.name} executed in ${duration}ms`);
+        return result;
+      };
+
+      // Create a plugin that adds tools
+      const mathPlugin: Plugin<{ operations: string[] }> = (srv, opts) => {
+        if (opts?.operations.includes('multiply')) {
+          srv.tool('multiply', {
+            input: schema(z.object({ a: z.number(), b: z.number() })),
+            output: schema(z.object({ result: z.number() })),
+            handler: async ({ a, b }) => ({ result: a * b }),
+          });
+        }
+      };
+
+      // Build server with middleware and plugin
+      const server = createMcpServer()
+        .use(loggingMiddleware)
+        .register(mathPlugin, { operations: ['multiply'] })
+        .tool('add', {
+          input: schema(z.object({ a: z.number(), b: z.number() })),
+          output: schema(z.object({ result: z.number() })),
+          handler: async ({ a, b }) => ({ result: a + b }),
+        })
+        .build();
+
+      // Test that everything works together
+      const addResult = await server.invoke({
+        type: 'tool',
+        name: 'add',
+        input: { a: 2, b: 3 },
+        meta: { start: BigInt(Date.now()) },
+      });
+
+      const multiplyResult = await server.invoke({
+        type: 'tool',
+        name: 'multiply',
+        input: { a: 4, b: 5 },
+        meta: { start: BigInt(Date.now()) },
+      });
+
+      expect(addResult.content).toEqual({ result: 5 });
+      expect(multiplyResult.content).toEqual({ result: 20 });
+      expect(server.registry.hasTool('add')).toBe(true);
+      expect(server.registry.hasTool('multiply')).toBe(true);
+    });
+  });
+
+  describe('Edge Cases and Error Scenarios', () => {
+    it('should handle invalid middleware types', () => {
+      expect(() => {
+        createMcpServer()
+          // @ts-expect-error - Testing runtime validation
+          .use('not-a-function')
+          .build();
+      }).toThrow('Middleware must be a function');
+
+      expect(() => {
+        createMcpServer()
+          // @ts-expect-error - Testing runtime validation
+          .use(null)
+          .build();
+      }).toThrow('Middleware must be a function');
+
+      expect(() => {
+        createMcpServer()
+          // @ts-expect-error - Testing runtime validation
+          .use({})
+          .build();
+      }).toThrow('Middleware must be a function');
+    });
+
+    it('should handle middleware that throws during composition', () => {
+      const throwingMiddleware: Middleware = () => {
+        throw new Error('Middleware composition error');
+      };
+
+      expect(() => {
+        createMcpServer()
+          .use(throwingMiddleware)
+          .tool('test', {
+            input: schema(z.string()),
+            output: schema(z.string()),
+            handler: async (input) => input,
+          })
+          .build();
+      }).toThrow('Middleware composition error');
+    });
+
+    it('should handle unknown operation types gracefully', async () => {
+      const server = createMcpServer().build();
+
+      const result = await server.invoke({
+        // @ts-expect-error - Testing runtime validation
+        type: 'unknown-type',
+        name: 'test',
+        input: 'test',
+        meta: { start: BigInt(Date.now()) },
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content).toBeInstanceOf(Error);
+      expect((result.content as Error).message).toContain('Unknown operation type');
+    });
+
+    it('should handle very large middleware chains', async () => {
+      const server = createMcpServer();
+
+      // Add 100 middleware functions
+      for (let i = 0; i < 100; i++) {
+        server.use((next) => async (ctx) => {
+          const result = await next(ctx);
+          return {
+            content: `m${i}[${result.content}]`,
+          };
+        });
+      }
+
+      server.tool('test', {
+        input: schema(z.string()),
+        output: schema(z.string()),
+        handler: async (input) => `core-${input}`,
+      });
+
+      const built = server.build();
+      const result = await built.invoke({
+        type: 'tool',
+        name: 'test',
+        input: 'test',
+        meta: { start: BigInt(Date.now()) },
+      });
+
+      expect(result.content).toContain('core-test');
+      expect(result.content).toContain('m0[');
+      expect(result.content).toContain('m99[');
+    });
+
+    it('should handle concurrent middleware execution', async () => {
+      const server = createMcpServer()
+        .use((next) => async (ctx) => {
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 10));
+          const result = await next(ctx);
+          return { content: `concurrent-${result.content}` };
+        })
+        .tool('test', {
+          input: schema(z.string()),
+          output: schema(z.string()),
+          handler: async (input) => `result-${input}`,
+        })
+        .build();
+
+      const promises = Array.from({ length: 10 }, (_, i) =>
+        server.invoke({
+          type: 'tool',
+          name: 'test',
+          input: `input-${i}`,
+          meta: { start: BigInt(Date.now()) },
+        }),
+      );
+
+      const results = await Promise.all(promises);
+
+      results.forEach((result, i) => {
+        expect(result.content).toBe(`concurrent-result-input-${i}`);
+      });
     });
   });
 });
