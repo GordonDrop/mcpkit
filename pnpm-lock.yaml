@@ -36,6 +36,25 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@20.19.1)
 
+  examples:
+    dependencies:
+      '@mcpkit/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@mcpkit/server':
+        specifier: workspace:*
+        version: link:../packages/server
+      '@mcpkit/transport-stdio':
+        specifier: workspace:*
+        version: link:../packages/transport-stdio
+    devDependencies:
+      tsx:
+        specifier: ^4.20.3
+        version: 4.20.3
+      typescript:
+        specifier: ^5.0.0
+        version: 5.8.3
+
   packages/cli: {}
 
   packages/core:
@@ -55,6 +74,10 @@ importers:
         version: 8.5.0(postcss@8.5.6)(typescript@5.8.3)(yaml@2.8.0)
 
   packages/server:
+    dependencies:
+      '@mcpkit/transport-stdio':
+        specifier: workspace:^
+        version: link:../transport-stdio
     devDependencies:
       '@mcpkit/core':
         specifier: workspace:^
@@ -69,7 +92,24 @@ importers:
         specifier: ^3.22.4
         version: 3.25.67
 
-  packages/transport-stdio: {}
+  packages/transport-stdio:
+    dependencies:
+      '@mcpkit/server':
+        specifier: workspace:*
+        version: link:../server
+    devDependencies:
+      '@mcpkit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.1
+      typescript:
+        specifier: ^5.0.0
+        version: 5.8.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.1)
 
 packages:
 
@@ -1015,6 +1055,9 @@ packages:
     resolution: {integrity: sha512-VaUJspBffn/LMCJVoMvSAdmscJyS1auj5Zulnn5UoYcY531UWmdwhRWkcGKnGU93m5HSXP9LP2usOryrBtQowA==}
     engines: {node: '>=16'}
 
+  get-tsconfig@4.10.1:
+    resolution: {integrity: sha512-auHyJ4AgMz7vgS8Hp3N6HXSmlMdUyhSUrfBF16w153rxtLIEOE+HGqaBppczZvnHLqQJfiHotCYpNhl0lUROFQ==}
+
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
     engines: {node: '>= 6'}
@@ -1533,6 +1576,9 @@ packages:
     resolution: {integrity: sha512-qYg9KP24dD5qka9J47d0aVky0N+b4fTU89LN9iDnjB5waksiC49rvMB0PrUJQGoTmH50XPiqOvAjDfaijGxYZw==}
     engines: {node: '>=8'}
 
+  resolve-pkg-maps@1.0.0:
+    resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
+
   resolve@1.22.10:
     resolution: {integrity: sha512-NPRy+/ncIMeDlTAsuqwKIiferiawhefFJtkNSW0qZJEqMEb+qBt/77B/jGeeek+F0uOeN05CDa6HXbbIgtVX4w==}
     engines: {node: '>= 0.4'}
@@ -1762,6 +1808,11 @@ packages:
         optional: true
       typescript:
         optional: true
+
+  tsx@4.20.3:
+    resolution: {integrity: sha512-qjbnuR9Tr+FJOMBqJCW5ehvIo/buZq7vH7qD7JziU98h6l3qGy0a/yPFjwO+y0/T7GFpNgNAvEcPPVfyT8rrPQ==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
 
   turbo-darwin-64@2.5.4:
     resolution: {integrity: sha512-ah6YnH2dErojhFooxEzmvsoZQTMImaruZhFPfMKPBq8sb+hALRdvBNLqfc8NWlZq576FkfRZ/MSi4SHvVFT9PQ==}
@@ -2830,6 +2881,10 @@ snapshots:
 
   get-stream@8.0.1: {}
 
+  get-tsconfig@4.10.1:
+    dependencies:
+      resolve-pkg-maps: 1.0.0
+
   glob-parent@5.1.2:
     dependencies:
       is-glob: 4.0.3
@@ -3316,6 +3371,8 @@ snapshots:
 
   resolve-from@5.0.0: {}
 
+  resolve-pkg-maps@1.0.0: {}
+
   resolve@1.22.10:
     dependencies:
       is-core-module: 2.16.1
@@ -3565,6 +3622,13 @@ snapshots:
       - supports-color
       - tsx
       - yaml
+
+  tsx@4.20.3:
+    dependencies:
+      esbuild: 0.25.5
+      get-tsconfig: 4.10.1
+    optionalDependencies:
+      fsevents: 2.3.3
 
   turbo-darwin-64@2.5.4:
     optional: true

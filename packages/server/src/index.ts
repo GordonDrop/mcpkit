@@ -8,17 +8,20 @@ import {
   type ResourceSpec,
   s as schema,
   type ToolSpec,
+  type Transport,
   z,
 } from '@mcpkit/core';
 import { composeMiddlewares } from './internal/compose';
 import { errorWrapperMiddleware } from './middleware/builtin-error-wrapper';
 import type { CallCtx, InvokeFn, Middleware } from './middleware/types';
 import type { Plugin } from './plugin/index';
+import { createDefaultStdIo } from './transport-default';
 
 export { schema, z };
 
 export type { Middleware } from './middleware/types';
 export type { Plugin } from './plugin';
+export { createDefaultStdIo } from './transport-default';
 
 interface PendingPlugin {
   fn: Plugin<unknown>;
@@ -42,7 +45,9 @@ export interface McpServerBuilder {
 
   use(middleware: Middleware): McpServerBuilder;
   register<T>(plugin: Plugin<T>, options?: T): McpServerBuilder;
+  transport(transport: Transport): McpServerBuilder;
   build(): McpRuntimeBundle;
+  listen(options?: { signal?: AbortSignal }): Promise<void>;
 }
 
 export interface McpRuntimeBundle {
@@ -57,6 +62,8 @@ class McpServerBuilderImpl implements McpServerBuilder {
   private readonly pendingResources: ResourceSpec[] = [];
   private readonly pendingMiddlewares: Middleware[] = [];
   private readonly pendingPlugins: PendingPlugin[] = [];
+  private selectedTransport?: Transport;
+  private builtBundle?: McpRuntimeBundle;
 
   tool<I, O>(name: string, definition: Omit<ToolSpec<I, O>, 'name'>): McpServerBuilder {
     const tool: ToolSpec<I, O> = {
@@ -106,6 +113,40 @@ class McpServerBuilderImpl implements McpServerBuilder {
   register<T>(plugin: Plugin<T>, options?: T): McpServerBuilder {
     this.pendingPlugins.push({ fn: plugin as Plugin<unknown>, options });
     return this;
+  }
+
+  transport(transport: Transport): McpServerBuilder {
+    if (this.selectedTransport) {
+      throw new Error('Transport can only be set once');
+    }
+    this.selectedTransport = transport;
+    return this;
+  }
+
+  async listen(options?: { signal?: AbortSignal }): Promise<void> {
+    if (!this.builtBundle) {
+      this.builtBundle = this.build();
+    }
+
+    const transport = this.selectedTransport || createDefaultStdIo();
+
+    const handleAbort = () => {
+      if (transport.stop) {
+        transport.stop().catch(console.error);
+      }
+    };
+
+    if (options?.signal) {
+      options.signal.addEventListener('abort', handleAbort);
+    }
+
+    try {
+      await transport.start(this.builtBundle.invoke);
+    } finally {
+      if (options?.signal) {
+        options.signal.removeEventListener('abort', handleAbort);
+      }
+    }
   }
 
   build(): McpRuntimeBundle {

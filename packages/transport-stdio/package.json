@@ -1,17 +1,26 @@
 {
-  "name": "transport-stdio",
-  "version": "0.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@mcpkit/transport-stdio",
+  "version": "0.0.1",
+  "description": "Stdio transport implementation for MCP servers",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "test:ci": "vitest run",
     "test:types": "echo 'No type definition tests for this package'",
     "lint": "npx @biomejs/biome check src",
     "typecheck": "tsc -p . --noEmit"
   },
-  "keywords": [],
+  "keywords": [
+    "mcp",
+    "transport",
+    "stdio",
+    "json-rpc"
+  ],
   "author": "Konstantin Simanov",
   "license": "ISC",
   "repository": {
@@ -22,5 +31,14 @@
   "bugs": {
     "url": "https://github.com/GordonDrop/mcpkit/issues"
   },
-  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/transport-stdio#readme"
+  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/transport-stdio#readme",
+  "peerDependencies": {
+    "@mcpkit/server": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "@types/node": "^20.0.0",
+    "@mcpkit/core": "workspace:*"
+  }
 }

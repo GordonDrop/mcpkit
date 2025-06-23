@@ -1,0 +1,19 @@
+{
+  "name": "mcpkit-examples",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "stdio-server": "tsx stdio-server.ts",
+    "test-client": "tsx test-client.ts"
+  },
+  "dependencies": {
+    "@mcpkit/core": "workspace:*",
+    "@mcpkit/server": "workspace:*",
+    "@mcpkit/transport-stdio": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.3",
+    "typescript": "^5.0.0"
+  }
+}
