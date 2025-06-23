@@ -27,7 +27,7 @@ interface JsonRpcResponse {
 async function testStdioServer() {
   console.log('🚀 Starting MCP Server with stdio transport...\n');
 
-  const serverPath = resolve(__dirname, 'stdio-server.ts');
+  const serverPath = resolve(new URL('.', import.meta.url).pathname, 'stdio-server.ts');
   const server = spawn('npx', ['tsx', serverPath], {
     stdio: ['pipe', 'pipe', 'inherit'],
   });
@@ -119,6 +119,6 @@ async function testStdioServer() {
   }, 10000);
 }
 
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   testStdioServer().catch(console.error);
 }

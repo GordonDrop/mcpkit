@@ -5,10 +5,15 @@
   "type": "module",
   "scripts": {
     "stdio-server": "tsx stdio-server.ts",
-    "test-client": "tsx test-client.ts"
+    "test-client": "tsx test-client.ts",
+    "ndjson-reader": "tsx ndjson-reader-example.ts",
+    "ndjson-writer": "tsx ndjson-writer-example.ts",
+    "ndjson-processing": "tsx ndjson-stream-processing-example.ts",
+    "ndjson-demo": "npm run ndjson-reader && npm run ndjson-writer && npm run ndjson-processing"
   },
   "dependencies": {
     "@mcpkit/core": "workspace:*",
+    "@mcpkit/ndjson": "workspace:*",
     "@mcpkit/server": "workspace:*",
     "@mcpkit/transport-stdio": "workspace:*"
   },

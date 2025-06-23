@@ -1,0 +1,7 @@
+{"type":"user","id":1,"name":"Alice Johnson","email":"alice@example.com","age":28}
+{"type":"user","id":2,"name":"Bob Smith","email":"bob@example.com","age":34}
+{"type":"order","id":101,"user_id":1,"amount":99.99,"status":"pending"}
+{"type":"order","id":102,"user_id":2,"amount":149.5,"status":"completed"}
+{"type":"user","id":3,"name":"Charlie Brown","email":"charlie@example.com","age":22}
+{"type":"order","id":103,"user_id":3,"amount":75.25,"status":"pending"}
+{"type":"metadata","processed_at":"2025-06-23T19:45:48.581Z","version":"1.0"}
