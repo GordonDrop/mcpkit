@@ -14,6 +14,10 @@ import {
 import { Registry } from './registry';
 import { createMcpRuntime, DefaultMcpRuntime } from './runtime';
 
+vi.mock('node:fs/promises', () => ({
+  readFile: vi.fn(),
+}));
+
 describe('McpRuntime', () => {
   let registry: Registry;
   let runtime: DefaultMcpRuntime;
@@ -99,6 +103,56 @@ describe('McpRuntime', () => {
       const result = await runtime.executeTool('context-tool', 'test');
       expect(result).toBe('version: 1.0.0');
     });
+
+    it('should re-throw non-Error objects from tool handlers', async () => {
+      const stringThrowingTool: ToolSpec = {
+        name: 'string-throwing-tool',
+        input: s(z.string()),
+        output: s(z.string()),
+        handler: async () => {
+          throw 'string error';
+        },
+      };
+
+      registry.addTool(stringThrowingTool);
+
+      await expect(runtime.executeTool('string-throwing-tool', 'input')).rejects.toBe(
+        'string error',
+      );
+    });
+
+    it('should re-throw non-Error numbers from tool handlers', async () => {
+      const numberThrowingTool: ToolSpec = {
+        name: 'number-throwing-tool',
+        input: s(z.string()),
+        output: s(z.string()),
+        handler: async () => {
+          throw 42;
+        },
+      };
+
+      registry.addTool(numberThrowingTool);
+
+      await expect(runtime.executeTool('number-throwing-tool', 'input')).rejects.toBe(42);
+    });
+
+    it('should re-throw non-Error objects from tool handlers', async () => {
+      const objectThrowingTool: ToolSpec = {
+        name: 'object-throwing-tool',
+        input: s(z.string()),
+        output: s(z.string()),
+        handler: async () => {
+          throw { code: 'CUSTOM_ERROR', message: 'Custom error object' };
+        },
+      };
+
+      registry.addTool(objectThrowingTool);
+
+      await expect(runtime.executeTool('object-throwing-tool', 'input')).rejects.toEqual({
+        code: 'CUSTOM_ERROR',
+        message: 'Custom error object',
+      });
+    });
   });
 
   describe('Prompt rendering', () => {
@@ -178,6 +232,90 @@ describe('McpRuntime', () => {
 
       const result3 = await runtime.renderPrompt('simple-prompt', 'not an object');
       expect(result3).toBe('Hello {{name}}!');
+    });
+
+    it('should re-throw non-Error objects from prompt parameter validation', async () => {
+      const mockSchema = {
+        parse: vi.fn().mockImplementation(() => {
+          throw 'validation string error';
+        }),
+      } as unknown as ReturnType<typeof s>;
+
+      const stringThrowingPrompt: PromptSpec = {
+        name: 'string-throwing-prompt',
+        template: 'Hello {{name}}!',
+        params: mockSchema,
+      };
+
+      registry.addPrompt(stringThrowingPrompt);
+
+      await expect(runtime.renderPrompt('string-throwing-prompt', { name: 'test' })).rejects.toBe(
+        'validation string error',
+      );
+    });
+
+    it('should re-throw non-Error numbers from prompt operations', async () => {
+      const mockSchema = {
+        parse: vi.fn().mockImplementation(() => {
+          throw 404;
+        }),
+      } as unknown as ReturnType<typeof s>;
+
+      const numberThrowingPrompt: PromptSpec = {
+        name: 'number-throwing-prompt',
+        template: 'Hello {{name}}!',
+        params: mockSchema,
+      };
+
+      registry.addPrompt(numberThrowingPrompt);
+
+      await expect(runtime.renderPrompt('number-throwing-prompt', { name: 'test' })).rejects.toBe(
+        404,
+      );
+    });
+
+    it('should re-throw non-Error objects from prompt operations', async () => {
+      const customError = { type: 'VALIDATION_ERROR', details: 'Custom validation failed' };
+      const mockSchema = {
+        parse: vi.fn().mockImplementation(() => {
+          throw customError;
+        }),
+      } as unknown as ReturnType<typeof s>;
+
+      const objectThrowingPrompt: PromptSpec = {
+        name: 'object-throwing-prompt',
+        template: 'Hello {{name}}!',
+        params: mockSchema,
+      };
+
+      registry.addPrompt(objectThrowingPrompt);
+
+      await expect(
+        runtime.renderPrompt('object-throwing-prompt', { name: 'test' }),
+      ).rejects.toEqual(customError);
+    });
+
+    it('should handle Error objects that are not validation errors in prompt rendering', async () => {
+      const mockSchema = {
+        parse: vi.fn().mockImplementation(() => {
+          throw new Error('Template rendering failed');
+        }),
+      } as unknown as ReturnType<typeof s>;
+
+      const errorThrowingPrompt: PromptSpec = {
+        name: 'error-throwing-prompt',
+        template: 'Hello {{name}}!',
+        params: mockSchema,
+      };
+
+      registry.addPrompt(errorThrowingPrompt);
+
+      await expect(runtime.renderPrompt('error-throwing-prompt', { name: 'test' })).rejects.toThrow(
+        ExecutionFailure,
+      );
+      await expect(runtime.renderPrompt('error-throwing-prompt', { name: 'test' })).rejects.toThrow(
+        "Execution failed for prompt 'error-throwing-prompt': Template rendering failed",
+      );
     });
   });
 
@@ -260,6 +398,112 @@ describe('McpRuntime', () => {
       await expect(runtime.getResource('http-error-resource')).rejects.toThrow(
         'HTTP 404: Not Found',
       );
+    });
+
+    it('should load file:// resources successfully', async () => {
+      const { readFile } = await import('node:fs/promises');
+      const mockReadFile = vi.mocked(readFile);
+      mockReadFile.mockResolvedValue('file content');
+
+      const fileResource: ResourceSpec = {
+        name: 'file-resource',
+        title: 'File Resource',
+        uri: 'file:///path/to/file.txt',
+      };
+
+      registry.addResource(fileResource);
+
+      const result = await runtime.getResource('file-resource');
+      expect(result).toBe('file content');
+      expect(mockReadFile).toHaveBeenCalledWith(new URL('file:///path/to/file.txt'), 'utf-8');
+    });
+
+    it('should handle file:// resource loading errors', async () => {
+      const { readFile } = await import('node:fs/promises');
+      const mockReadFile = vi.mocked(readFile);
+      mockReadFile.mockRejectedValue(new Error('File not found'));
+
+      const fileResource: ResourceSpec = {
+        name: 'file-error-resource',
+        title: 'File Error Resource',
+        uri: 'file:///nonexistent/file.txt',
+      };
+
+      registry.addResource(fileResource);
+
+      await expect(runtime.getResource('file-error-resource')).rejects.toThrow(ExecutionFailure);
+      await expect(runtime.getResource('file-error-resource')).rejects.toThrow(
+        "Execution failed for resource 'file-error-resource': File not found",
+      );
+    });
+
+    it('should test various unsupported URI schemes for comprehensive coverage', async () => {
+      const schemes = ['ftp', 'sftp', 'ssh', 'ldap', 'custom'];
+
+      for (const scheme of schemes) {
+        const unsupportedResource: ResourceSpec = {
+          name: `${scheme}-resource`,
+          uri: `${scheme}://example.com/file.txt`,
+        };
+
+        registry.addResource(unsupportedResource);
+
+        await expect(runtime.getResource(`${scheme}-resource`)).rejects.toThrow(ExecutionFailure);
+        await expect(runtime.getResource(`${scheme}-resource`)).rejects.toThrow(
+          `Unsupported URI scheme: ${scheme}:`,
+        );
+      }
+    });
+
+    it('should re-throw non-Error objects from resource loading operations', async () => {
+      const mockFetch = vi.fn().mockImplementation(() => {
+        throw 'network string error';
+      });
+      global.fetch = mockFetch;
+
+      const stringThrowingResource: ResourceSpec = {
+        name: 'string-throwing-resource',
+        uri: 'http://example.com/data.txt',
+      };
+
+      registry.addResource(stringThrowingResource);
+
+      await expect(runtime.getResource('string-throwing-resource')).rejects.toBe(
+        'network string error',
+      );
+    });
+
+    it('should re-throw non-Error numbers from resource loading operations', async () => {
+      const mockFetch = vi.fn().mockImplementation(() => {
+        throw 500;
+      });
+      global.fetch = mockFetch;
+
+      const numberThrowingResource: ResourceSpec = {
+        name: 'number-throwing-resource',
+        uri: 'http://example.com/data.txt',
+      };
+
+      registry.addResource(numberThrowingResource);
+
+      await expect(runtime.getResource('number-throwing-resource')).rejects.toBe(500);
+    });
+
+    it('should re-throw non-Error objects from resource loading operations', async () => {
+      const customError = { code: 'NETWORK_ERROR', message: 'Custom network error' };
+      const mockFetch = vi.fn().mockImplementation(() => {
+        throw customError;
+      });
+      global.fetch = mockFetch;
+
+      const objectThrowingResource: ResourceSpec = {
+        name: 'object-throwing-resource',
+        uri: 'http://example.com/data.txt',
+      };
+
+      registry.addResource(objectThrowingResource);
+
+      await expect(runtime.getResource('object-throwing-resource')).rejects.toEqual(customError);
     });
   });
 
