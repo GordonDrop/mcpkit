@@ -2,6 +2,7 @@ import {
   Registry as CoreRegistry,
   createMcpRuntime,
   type ExecutionCtx,
+  LifecycleError,
   type McpRuntime,
   type PromptSpec,
   type Registry,
@@ -64,6 +65,8 @@ class McpServerBuilderImpl implements McpServerBuilder {
   private readonly pendingPlugins: PendingPlugin[] = [];
   private selectedTransport?: Transport;
   private builtBundle?: McpRuntimeBundle;
+  private hasListenBeenCalled = false;
+  private isExecutingPlugins = false;
 
   tool<I, O>(name: string, definition: Omit<ToolSpec<I, O>, 'name'>): McpServerBuilder {
     const tool: ToolSpec<I, O> = {
@@ -124,6 +127,11 @@ class McpServerBuilderImpl implements McpServerBuilder {
   }
 
   async listen(options?: { signal?: AbortSignal }): Promise<void> {
+    if (this.hasListenBeenCalled) {
+      throw new LifecycleError('listen()', 'method can only be called once');
+    }
+    this.hasListenBeenCalled = true;
+
     if (!this.builtBundle) {
       this.builtBundle = this.build();
     }
@@ -150,8 +158,14 @@ class McpServerBuilderImpl implements McpServerBuilder {
   }
 
   build(): McpRuntimeBundle {
-    for (const pluginEntry of this.pendingPlugins) {
-      pluginEntry.fn(this, pluginEntry.options);
+    this.isExecutingPlugins = true;
+    try {
+      for (const pluginEntry of this.pendingPlugins) {
+        const protectedBuilder = this.createProtectedBuilder();
+        pluginEntry.fn(protectedBuilder, pluginEntry.options);
+      }
+    } finally {
+      this.isExecutingPlugins = false;
     }
 
     this.pendingMiddlewares.push(errorWrapperMiddleware);
@@ -210,6 +224,23 @@ class McpServerBuilderImpl implements McpServerBuilder {
     const wrappedInvoker = composeMiddlewares(this.pendingMiddlewares, coreInvoker);
 
     return { registry, runtime, invoke: wrappedInvoker };
+  }
+
+  private createProtectedBuilder(): McpServerBuilder {
+    return {
+      tool: this.tool.bind(this),
+      prompt: this.prompt.bind(this),
+      resource: this.resource.bind(this),
+      use: this.use.bind(this),
+      register: this.register.bind(this),
+      transport: this.transport.bind(this),
+      build: () => {
+        throw new LifecycleError('build()', 'plugins cannot call build() during execution');
+      },
+      listen: () => {
+        throw new LifecycleError('listen()', 'plugins cannot call listen() during execution');
+      },
+    };
   }
 }
 

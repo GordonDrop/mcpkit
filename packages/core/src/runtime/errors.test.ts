@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ExecutionFailure,
   InvalidInputError,
+  LifecycleError,
   NameConflictError,
   PromptNotFoundError,
   ResourceNotFoundError,
@@ -117,6 +118,26 @@ describe('Runtime Errors', () => {
 
       expect(error.message).toBe(
         "resource with name 'duplicate-resource' already exists in registry",
+      );
+    });
+  });
+
+  describe('LifecycleError', () => {
+    it('should create error with correct message and code', () => {
+      const error = new LifecycleError('listen()', 'method can only be called once');
+
+      expect(error).toBeInstanceOf(RuntimeError);
+      expect(error).toBeInstanceOf(Error);
+      expect(error.name).toBe('LifecycleError');
+      expect(error.code).toBe('LIFECYCLE_ERROR');
+      expect(error.message).toBe('Lifecycle violation: listen() - method can only be called once');
+    });
+
+    it('should create error for plugin build() violation', () => {
+      const error = new LifecycleError('build()', 'plugins cannot call build() during execution');
+
+      expect(error.message).toBe(
+        'Lifecycle violation: build() - plugins cannot call build() during execution',
       );
     });
   });
