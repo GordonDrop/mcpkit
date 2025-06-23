@@ -1,6 +1,6 @@
 {
   "name": "@mcpkit/transport-stdio",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Stdio transport implementation for MCP servers",
   "type": "module",
   "main": "./dist/index.js",
