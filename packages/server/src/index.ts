@@ -3,7 +3,6 @@ import {
   createMcpRuntime,
   type ExecutionCtx,
   type McpRuntime,
-  NameConflictError,
   type PromptSpec,
   type Registry,
   type ResourceSpec,
@@ -11,8 +10,20 @@ import {
   type ToolSpec,
   z,
 } from '@mcpkit/core';
+import { composeMiddlewares } from './internal/compose';
+import { errorWrapperMiddleware } from './middleware/builtin-error-wrapper';
+import type { CallCtx, InvokeFn, Middleware } from './middleware/types';
+import type { Plugin } from './plugin/index';
 
 export { schema, z };
+
+export type { Middleware } from './middleware/types';
+export type { Plugin } from './plugin';
+
+interface PendingPlugin {
+  fn: Plugin<unknown>;
+  options?: unknown;
+}
 
 export interface McpServerBuilder {
   tool<I, O>(name: string, definition: Omit<ToolSpec<I, O>, 'name'>): McpServerBuilder;
@@ -29,19 +40,23 @@ export interface McpServerBuilder {
     metadata?: Partial<Omit<ResourceSpec, 'name' | 'uri'>>,
   ): McpServerBuilder;
 
-  use(middleware: unknown): McpServerBuilder;
+  use(middleware: Middleware): McpServerBuilder;
+  register<T>(plugin: Plugin<T>, options?: T): McpServerBuilder;
   build(): McpRuntimeBundle;
 }
 
 export interface McpRuntimeBundle {
   registry: Registry;
   runtime: McpRuntime;
+  invoke: InvokeFn;
 }
 
 class McpServerBuilderImpl implements McpServerBuilder {
   private readonly pendingTools: ToolSpec[] = [];
   private readonly pendingPrompts: PromptSpec[] = [];
   private readonly pendingResources: ResourceSpec[] = [];
+  private readonly pendingMiddlewares: Middleware[] = [];
+  private readonly pendingPlugins: PendingPlugin[] = [];
 
   tool<I, O>(name: string, definition: Omit<ToolSpec<I, O>, 'name'>): McpServerBuilder {
     const tool: ToolSpec<I, O> = {
@@ -80,11 +95,26 @@ class McpServerBuilderImpl implements McpServerBuilder {
     return this;
   }
 
-  use(_middleware: unknown): McpServerBuilder {
+  use(middleware: Middleware): McpServerBuilder {
+    if (typeof middleware !== 'function') {
+      throw new TypeError('Middleware must be a function');
+    }
+    this.pendingMiddlewares.push(middleware);
+    return this;
+  }
+
+  register<T>(plugin: Plugin<T>, options?: T): McpServerBuilder {
+    this.pendingPlugins.push({ fn: plugin as Plugin<unknown>, options });
     return this;
   }
 
   build(): McpRuntimeBundle {
+    for (const pluginEntry of this.pendingPlugins) {
+      pluginEntry.fn(this, pluginEntry.options);
+    }
+
+    this.pendingMiddlewares.push(errorWrapperMiddleware);
+
     const registry = new CoreRegistry();
 
     const allNames = new Set<string>();
@@ -116,7 +146,29 @@ class McpServerBuilderImpl implements McpServerBuilder {
 
     const runtime = createMcpRuntime(registry, executionCtx);
 
-    return { registry, runtime };
+    const coreInvoker: InvokeFn = async (ctx: CallCtx) => {
+      switch (ctx.type) {
+        case 'tool': {
+          const result = await runtime.executeTool(ctx.name, ctx.input);
+          return { content: result };
+        }
+        case 'prompt': {
+          const result = await runtime.renderPrompt(ctx.name, ctx.input);
+          return { content: result };
+        }
+        case 'resource': {
+          const result = await runtime.getResource(ctx.name);
+          return { content: result };
+        }
+        default: {
+          throw new Error(`Unknown operation type: ${ctx.type}`);
+        }
+      }
+    };
+
+    const wrappedInvoker = composeMiddlewares(this.pendingMiddlewares, coreInvoker);
+
+    return { registry, runtime, invoke: wrappedInvoker };
   }
 }
 
