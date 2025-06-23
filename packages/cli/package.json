@@ -1,19 +1,33 @@
 {
-  "name": "cli",
-  "version": "0.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@mcpkit/cli",
+  "version": "0.1.0",
+  "description": "CLI tools for McpKit development and validation",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "mcp": "./dist/index.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
-    "test:ci": "vitest run",
+    "test:ci": "vitest run --coverage",
     "test:types": "echo 'No type definition tests for this package'",
     "lint": "npx @biomejs/biome check src",
     "typecheck": "tsc -p . --noEmit"
   },
-  "keywords": [],
+  "keywords": [
+    "mcpkit",
+    "cli",
+    "development",
+    "validation",
+    "mcp"
+  ],
   "author": "Konstantin Simanov",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/GordonDrop/mcpkit.git",
@@ -22,5 +36,25 @@
   "bugs": {
     "url": "https://github.com/GordonDrop/mcpkit/issues"
   },
-  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/cli#readme"
+  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/cli#readme",
+  "peerDependencies": {
+    "@mcpkit/server": "^0.1.0"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0",
+    "tsx": "^4.20.3",
+    "pretty-ms": "^8.0.0",
+    "deep-diff": "^1.0.2",
+    "chokidar": "^3.5.3"
+  },
+  "devDependencies": {
+    "@mcpkit/server": "workspace:^",
+    "@types/deep-diff": "^1.0.2",
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "1.6.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "execa": "^8.0.1"
+  }
 }

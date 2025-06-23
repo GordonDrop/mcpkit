@@ -1,6 +1,6 @@
 import { createInterface } from 'node:readline';
 import type { Readable } from 'node:stream';
-import { NDJSONParseError } from './errors';
+import { NDJSONParseError } from './errors.js';
 
 export interface NDJSONReaderOptions {
   skipEmptyLines?: boolean;
