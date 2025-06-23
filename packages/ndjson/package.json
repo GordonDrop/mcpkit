@@ -1,6 +1,6 @@
 {
   "name": "@mcpkit/ndjson",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "NDJSON reader and writer utilities for Node.js streams",
   "type": "module",
   "main": "./dist/index.js",
