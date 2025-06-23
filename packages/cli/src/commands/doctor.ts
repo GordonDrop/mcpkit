@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { dirname, isAbsolute, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import deepDiff from 'deep-diff';
@@ -89,7 +89,7 @@ import { createMcpServer } from '@mcpkit/server';
 
 async function extractSchema() {
   try {
-    const module = await import('${entryPath.replace(/\\/g, '\\\\')}');
+    const module = await import('${isAbsolute(entryPath) ? pathToFileURL(entryPath).href : entryPath}');
 
     let server;
     if (module.default && typeof module.default === 'function') {
@@ -126,8 +126,8 @@ async function extractSchema() {
       if (tool) {
         tools[toolName] = {
           description: tool.description,
-          inputSchema: tool.input ? tool.input.schema : null,
-          outputSchema: tool.output ? tool.output.schema : null,
+          inputSchema: tool.input ? (tool.input.schema || tool.input) : null,
+          outputSchema: tool.output ? (tool.output.schema || tool.output) : null,
         };
       }
     }
@@ -138,7 +138,7 @@ async function extractSchema() {
         prompts[promptName] = {
           template: prompt.template,
           title: prompt.title,
-          paramsSchema: prompt.params ? prompt.params.schema : null,
+          paramsSchema: prompt.params ? (prompt.params.schema || prompt.params) : null,
         };
       }
     }
@@ -199,7 +199,11 @@ async function compareWithBaseline(
   const baselineContent = readFileSync(baselinePath, 'utf-8');
   const baseline: SchemaSnapshot = JSON.parse(baselineContent);
 
-  const differences: DiffChange[] | undefined = diff(baseline, snapshot);
+  // Exclude timestamp from comparison
+  const { timestamp: _, ...baselineForComparison } = baseline;
+  const { timestamp: __, ...snapshotForComparison } = snapshot;
+
+  const differences: DiffChange[] | undefined = diff(baselineForComparison, snapshotForComparison);
 
   if (!differences || differences.length === 0) {
     console.log(chalk.green('✅ No schema changes detected'));
@@ -282,14 +286,19 @@ function displayDifference(change: DiffChange): void {
 }
 
 function findEntryFile(entry: string): string | null {
-  const candidates = [
-    entry,
-    resolve(entry),
-    'src/index.ts',
-    'src/index.js',
-    'index.ts',
-    'index.js',
-  ];
+  // If a specific entry is provided (not the default), only check that file
+  if (entry !== 'src/index.ts') {
+    const candidates = [entry, resolve(entry)];
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        return resolve(candidate);
+      }
+    }
+    return null;
+  }
+
+  // For default entry, check common locations
+  const candidates = ['src/index.ts', 'src/index.js', 'index.ts', 'index.js'];
 
   for (const candidate of candidates) {
     if (existsSync(candidate)) {

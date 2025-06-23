@@ -1,26 +1,36 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execa } from 'execa';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const CLI_PATH = join(__dirname, '../dist/index.js');
-const TEST_DIR = join(__dirname, 'fixtures');
+const TEST_BASE_DIR = join(__dirname, 'fixtures');
 
 describe('mcp dev command', () => {
+  let testDir: string;
+
   beforeEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
-    mkdirSync(TEST_DIR, { recursive: true });
+    // Create unique test directory for each test
+    testDir = join(TEST_BASE_DIR, `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    rmSync(testDir, { recursive: true, force: true });
+    mkdirSync(testDir, { recursive: true });
   });
 
-  it('should show help when no entry file exists', async () => {
-    const result = await execa('node', [CLI_PATH, 'dev', 'nonexistent.ts'], {
+  afterEach(() => {
+    // Clean up after each test
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it('should show error when no entry file exists', async () => {
+    const result = await execa('node', [CLI_PATH, 'dev', join(testDir, 'nonexistent.ts')], {
       reject: false,
-      cwd: TEST_DIR,
+      cwd: process.cwd(),
+      timeout: 5000,
     });
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('Entry file not found');
-  });
+  }, 10000);
 
   it('should find default entry files', async () => {
     const entryContent = `
@@ -37,12 +47,12 @@ const server = createMcpServer()
 export default server;
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), entryContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'index.ts'), entryContent);
 
     const result = await execa('node', [CLI_PATH, 'dev', '--help'], {
       reject: false,
-      cwd: TEST_DIR,
+      cwd: process.cwd(),
     });
 
     expect(result.exitCode).toBe(0);
@@ -88,12 +98,12 @@ export default createMcpServer()
   });
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'server.mcp.ts'), mcpContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'server.mcp.ts'), mcpContent);
 
     const result = await execa('node', [CLI_PATH, 'dev', '--help'], {
       reject: false,
-      cwd: TEST_DIR,
+      cwd: process.cwd(),
     });
 
     expect(result.exitCode).toBe(0);

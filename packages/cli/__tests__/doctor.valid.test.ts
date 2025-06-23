@@ -1,15 +1,24 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execa } from 'execa';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const CLI_PATH = join(__dirname, '../dist/index.js');
-const TEST_DIR = join(__dirname, 'fixtures');
+const TEST_BASE_DIR = join(__dirname, 'fixtures');
 
 describe('mcp doctor command - validation', () => {
+  let testDir: string;
+
   beforeEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
-    mkdirSync(TEST_DIR, { recursive: true });
+    // Create unique test directory for each test
+    testDir = join(TEST_BASE_DIR, `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    rmSync(testDir, { recursive: true, force: true });
+    mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    // Clean up after each test
+    rmSync(testDir, { recursive: true, force: true });
   });
 
   it('should validate a simple MCP server', async () => {
@@ -31,12 +40,12 @@ export default createMcpServer()
   });
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), serverContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'index.ts'), serverContent);
 
-    const result = await execa('node', [CLI_PATH, 'doctor', 'src/index.ts'], {
+    const result = await execa('node', [CLI_PATH, 'doctor', join(testDir, 'src/index.ts')], {
       reject: false,
-      cwd: TEST_DIR,
+      cwd: process.cwd(),
     });
 
     expect(result.exitCode).toBe(0);
@@ -61,14 +70,18 @@ export default createMcpServer()
   });
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), serverContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'index.ts'), serverContent);
 
-    const snapshotPath = join(TEST_DIR, 'schema.json');
-    const result = await execa('node', [CLI_PATH, 'doctor', 'src/index.ts', '-o', snapshotPath], {
-      reject: false,
-      cwd: TEST_DIR,
-    });
+    const snapshotPath = join(testDir, 'schema.json');
+    const result = await execa(
+      'node',
+      [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-o', snapshotPath],
+      {
+        reject: false,
+        cwd: process.cwd(),
+      },
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('Schema snapshot saved');
@@ -88,12 +101,12 @@ import { createMcpServer } from '@mcpkit/server';
 export default createMcpServer();
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), serverContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'index.ts'), serverContent);
 
-    const result = await execa('node', [CLI_PATH, 'doctor', 'src/index.ts'], {
+    const result = await execa('node', [CLI_PATH, 'doctor', join(testDir, 'src/index.ts')], {
       reject: false,
-      cwd: TEST_DIR,
+      cwd: process.cwd(),
     });
 
     expect(result.exitCode).toBe(0);
@@ -115,9 +128,9 @@ export default createMcpServer();
   });
 
   it('should handle invalid entry file', async () => {
-    const result = await execa('node', [CLI_PATH, 'doctor', 'nonexistent.ts'], {
+    const result = await execa('node', [CLI_PATH, 'doctor', join(testDir, 'nonexistent.ts')], {
       reject: false,
-      cwd: TEST_DIR,
+      cwd: process.cwd(),
     });
 
     expect(result.exitCode).toBe(1);

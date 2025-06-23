@@ -129,14 +129,19 @@ export const devCommand = new Command('dev')
   });
 
 function findEntryFile(entry: string): string | null {
-  const candidates = [
-    entry,
-    resolve(entry),
-    'src/index.ts',
-    'src/index.js',
-    'index.ts',
-    'index.js',
-  ];
+  // If a specific entry is provided (not the default), only check that file
+  if (entry !== 'src/index.ts') {
+    const candidates = [entry, resolve(entry)];
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        return resolve(candidate);
+      }
+    }
+    return null;
+  }
+
+  // For default entry, check common locations
+  const candidates = ['src/index.ts', 'src/index.js', 'index.ts', 'index.js'];
 
   for (const candidate of candidates) {
     if (existsSync(candidate)) {

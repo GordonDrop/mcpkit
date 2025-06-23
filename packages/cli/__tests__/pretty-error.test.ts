@@ -95,6 +95,6 @@ describe('printError utility', () => {
     printError(new Error('Test'));
 
     const calls = consoleSpy.mock.calls;
-    expect(calls[calls.length - 1]).toEqual(['']);
+    expect(calls[calls.length - 1]).toEqual([]);
   });
 });

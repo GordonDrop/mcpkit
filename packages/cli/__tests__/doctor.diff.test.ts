@@ -1,15 +1,24 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execa } from 'execa';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const CLI_PATH = join(__dirname, '../dist/index.js');
-const TEST_DIR = join(__dirname, 'fixtures');
+const TEST_BASE_DIR = join(__dirname, 'fixtures');
 
 describe('mcp doctor command - diff detection', () => {
+  let testDir: string;
+
   beforeEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
-    mkdirSync(TEST_DIR, { recursive: true });
+    // Create unique test directory for each test
+    testDir = join(TEST_BASE_DIR, `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    rmSync(testDir, { recursive: true, force: true });
+    mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    // Clean up after each test
+    rmSync(testDir, { recursive: true, force: true });
   });
 
   it('should create baseline when none exists', async () => {
@@ -24,14 +33,18 @@ export default createMcpServer()
   });
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), serverContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'index.ts'), serverContent);
 
-    const baselinePath = join(TEST_DIR, 'baseline.json');
-    const result = await execa('node', [CLI_PATH, 'doctor', 'src/index.ts', '-b', baselinePath], {
-      reject: false,
-      cwd: TEST_DIR,
-    });
+    const baselinePath = join(testDir, 'baseline.json');
+    const result = await execa(
+      'node',
+      [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-b', baselinePath],
+      {
+        reject: false,
+        cwd: process.cwd(),
+      },
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('Baseline file not found');
@@ -51,19 +64,23 @@ export default createMcpServer()
   });
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), serverContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'index.ts'), serverContent);
 
-    const baselinePath = join(TEST_DIR, 'baseline.json');
+    const baselinePath = join(testDir, 'baseline.json');
 
-    await execa('node', [CLI_PATH, 'doctor', 'src/index.ts', '-b', baselinePath], {
-      cwd: TEST_DIR,
+    await execa('node', [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-b', baselinePath], {
+      cwd: process.cwd(),
     });
 
-    const result = await execa('node', [CLI_PATH, 'doctor', 'src/index.ts', '-b', baselinePath], {
-      reject: false,
-      cwd: TEST_DIR,
-    });
+    const result = await execa(
+      'node',
+      [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-b', baselinePath],
+      {
+        reject: false,
+        cwd: process.cwd(),
+      },
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('No schema changes detected');
@@ -97,21 +114,25 @@ export default createMcpServer()
   });
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), originalContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'index.ts'), originalContent);
 
-    const baselinePath = join(TEST_DIR, 'baseline.json');
+    const baselinePath = join(testDir, 'baseline.json');
 
-    await execa('node', [CLI_PATH, 'doctor', 'src/index.ts', '-b', baselinePath], {
-      cwd: TEST_DIR,
+    await execa('node', [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-b', baselinePath], {
+      cwd: process.cwd(),
     });
 
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), updatedContent);
+    writeFileSync(join(testDir, 'src', 'index.ts'), updatedContent);
 
-    const result = await execa('node', [CLI_PATH, 'doctor', 'src/index.ts', '-b', baselinePath], {
-      reject: false,
-      cwd: TEST_DIR,
-    });
+    const result = await execa(
+      'node',
+      [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-b', baselinePath],
+      {
+        reject: false,
+        cwd: process.cwd(),
+      },
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('Schema changes detected');
@@ -147,21 +168,25 @@ export default createMcpServer()
   });
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), originalContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'index.ts'), originalContent);
 
-    const baselinePath = join(TEST_DIR, 'baseline.json');
+    const baselinePath = join(testDir, 'baseline.json');
 
-    await execa('node', [CLI_PATH, 'doctor', 'src/index.ts', '-b', baselinePath], {
-      cwd: TEST_DIR,
+    await execa('node', [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-b', baselinePath], {
+      cwd: process.cwd(),
     });
 
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), updatedContent);
+    writeFileSync(join(testDir, 'src', 'index.ts'), updatedContent);
 
-    const result = await execa('node', [CLI_PATH, 'doctor', 'src/index.ts', '-b', baselinePath], {
-      reject: false,
-      cwd: TEST_DIR,
-    });
+    const result = await execa(
+      'node',
+      [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-b', baselinePath],
+      {
+        reject: false,
+        cwd: process.cwd(),
+      },
+    );
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('Schema changes detected');
@@ -192,23 +217,23 @@ export default createMcpServer()
   });
 `;
 
-    mkdirSync(join(TEST_DIR, 'src'), { recursive: true });
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), originalContent);
+    mkdirSync(join(testDir, 'src'), { recursive: true });
+    writeFileSync(join(testDir, 'src', 'index.ts'), originalContent);
 
-    const baselinePath = join(TEST_DIR, 'baseline.json');
+    const baselinePath = join(testDir, 'baseline.json');
 
-    await execa('node', [CLI_PATH, 'doctor', 'src/index.ts', '-b', baselinePath], {
-      cwd: TEST_DIR,
+    await execa('node', [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-b', baselinePath], {
+      cwd: process.cwd(),
     });
 
-    writeFileSync(join(TEST_DIR, 'src', 'index.ts'), updatedContent);
+    writeFileSync(join(testDir, 'src', 'index.ts'), updatedContent);
 
     const result = await execa(
       'node',
-      [CLI_PATH, 'doctor', 'src/index.ts', '-b', baselinePath, '--ci'],
+      [CLI_PATH, 'doctor', join(testDir, 'src/index.ts'), '-b', baselinePath, '--ci'],
       {
         reject: false,
-        cwd: TEST_DIR,
+        cwd: process.cwd(),
       },
     );
 
