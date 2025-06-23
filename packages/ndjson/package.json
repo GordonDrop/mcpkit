@@ -1,47 +1,44 @@
 {
-  "name": "@mcpkit/transport-stdio",
-  "version": "1.0.0",
-  "description": "Stdio transport implementation for MCP servers",
+  "name": "@mcpkit/ndjson",
+  "version": "0.0.0",
+  "description": "NDJSON reader and writer utilities for Node.js streams",
   "type": "module",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
-    "test:ci": "vitest run",
+    "test:ci": "vitest run --coverage",
     "test:types": "echo 'No type definition tests for this package'",
     "lint": "npx @biomejs/biome check src",
     "typecheck": "tsc -p . --noEmit"
   },
   "keywords": [
-    "mcp",
-    "transport",
-    "stdio",
-    "json-rpc"
+    "ndjson",
+    "newline-delimited-json",
+    "streams",
+    "reader",
+    "writer",
+    "mcpkit"
   ],
   "author": "Konstantin Simanov",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/GordonDrop/mcpkit.git",
-    "directory": "packages/transport-stdio"
+    "directory": "packages/ndjson"
   },
   "bugs": {
     "url": "https://github.com/GordonDrop/mcpkit/issues"
   },
-  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/transport-stdio#readme",
-  "peerDependencies": {
-    "@mcpkit/server": "workspace:*"
-  },
-  "dependencies": {
-    "@mcpkit/ndjson": "workspace:*"
-  },
+  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/ndjson#readme",
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "vitest": "^1.0.0",
     "@types/node": "^20.0.0",
-    "@mcpkit/core": "workspace:*"
+    "@vitest/coverage-v8": "1.6.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   }
 }

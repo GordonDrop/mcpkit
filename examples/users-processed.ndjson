@@ -1,0 +1,3 @@
+{"id":1,"full_name":"Alice Johnson","email_domain":"example.com","age_group":"adult","processed_at":"2025-06-23T19:45:48.584Z"}
+{"id":2,"full_name":"Bob Smith","email_domain":"example.com","age_group":"adult","processed_at":"2025-06-23T19:45:48.584Z"}
+{"id":3,"full_name":"Charlie Brown","email_domain":"example.com","age_group":"young","processed_at":"2025-06-23T19:45:48.584Z"}

@@ -1,5 +1,6 @@
 import { createInterface } from 'node:readline';
 import type { Transport } from '@mcpkit/core';
+import { ndjsonWriter } from '@mcpkit/ndjson';
 
 type InvokeFn = (ctx: {
   type: 'tool' | 'prompt' | 'resource';
@@ -43,6 +44,7 @@ const JSON_RPC_ERRORS = {
 export class StdioTransport implements Transport {
   readonly name = 'stdio' as const;
   private abortController?: AbortController;
+  private writer = ndjsonWriter(process.stdout);
 
   async start(invoker: InvokeFn): Promise<void> {
     this.abortController = new AbortController();
@@ -72,24 +74,24 @@ export class StdioTransport implements Transport {
           try {
             request = JSON.parse(trimmedLine);
           } catch {
-            this.sendError(null, JSON_RPC_ERRORS.PARSE_ERROR);
+            await this.sendError(null, JSON_RPC_ERRORS.PARSE_ERROR);
             return;
           }
 
           if (!this.isValidJsonRpcRequest(request)) {
-            this.sendError(null, JSON_RPC_ERRORS.INVALID_REQUEST);
+            await this.sendError(null, JSON_RPC_ERRORS.INVALID_REQUEST);
             return;
           }
 
           if (request.method !== 'tool') {
-            this.sendError(request.id ?? null, JSON_RPC_ERRORS.METHOD_NOT_FOUND);
+            await this.sendError(request.id ?? null, JSON_RPC_ERRORS.METHOD_NOT_FOUND);
             return;
           }
 
           try {
             const params = request.params as { name?: string; input?: unknown } | undefined;
             if (!params || typeof params.name !== 'string') {
-              this.sendError(request.id ?? null, JSON_RPC_ERRORS.INVALID_PARAMS);
+              await this.sendError(request.id ?? null, JSON_RPC_ERRORS.INVALID_PARAMS);
               return;
             }
 
@@ -103,23 +105,23 @@ export class StdioTransport implements Transport {
             const result = await invoker(ctx);
 
             if (result.isError) {
-              this.sendError(request.id ?? null, {
+              await this.sendError(request.id ?? null, {
                 code: JSON_RPC_ERRORS.INTERNAL_ERROR.code,
                 message: 'Tool execution failed',
                 data: result.content,
               });
             } else {
-              this.sendResponse(request.id ?? null, result.content);
+              await this.sendResponse(request.id ?? null, result.content);
             }
           } catch (error) {
-            this.sendError(request.id ?? null, {
+            await this.sendError(request.id ?? null, {
               code: JSON_RPC_ERRORS.INTERNAL_ERROR.code,
               message: 'Internal error',
               data: error instanceof Error ? error.message : String(error),
             });
           }
         } catch (error) {
-          this.sendError(null, {
+          await this.sendError(null, {
             code: JSON_RPC_ERRORS.INTERNAL_ERROR.code,
             message: 'Unexpected error',
             data: error instanceof Error ? error.message : String(error),
@@ -161,22 +163,22 @@ export class StdioTransport implements Transport {
     );
   }
 
-  private sendResponse(id: string | number | null, result: unknown): void {
+  private async sendResponse(id: string | number | null, result: unknown): Promise<void> {
     const response: JsonRpcResponse = {
       jsonrpc: '2.0',
       id,
       result,
     };
-    console.log(JSON.stringify(response));
+    await this.writer.write(response);
   }
 
-  private sendError(id: string | number | null, error: JsonRpcError): void {
+  private async sendError(id: string | number | null, error: JsonRpcError): Promise<void> {
     const response: JsonRpcResponse = {
       jsonrpc: '2.0',
       id,
       error,
     };
-    console.log(JSON.stringify(response));
+    await this.writer.write(response);
   }
 }
 

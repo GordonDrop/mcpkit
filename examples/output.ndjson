@@ -1,0 +1,4 @@
+{"id":1,"name":"Product A","price":29.99,"category":"electronics"}
+{"id":2,"name":"Product B","price":15.5,"category":"books"}
+{"id":3,"name":"Product C","price":99.99,"category":"electronics"}
+{"type":"summary","total_products":3,"timestamp":"2025-06-23T19:45:12.259Z"}
