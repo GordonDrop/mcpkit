@@ -2,23 +2,27 @@ import {
   Registry as CoreRegistry,
   createMcpRuntime,
   type ExecutionCtx,
+  LifecycleError,
   type McpRuntime,
   type PromptSpec,
   type Registry,
   type ResourceSpec,
   s as schema,
   type ToolSpec,
+  type Transport,
   z,
 } from '@mcpkit/core';
 import { composeMiddlewares } from './internal/compose';
 import { errorWrapperMiddleware } from './middleware/builtin-error-wrapper';
 import type { CallCtx, InvokeFn, Middleware } from './middleware/types';
 import type { Plugin } from './plugin/index';
+import { createDefaultStdIo } from './transport-default';
 
 export { schema, z };
 
 export type { Middleware } from './middleware/types';
 export type { Plugin } from './plugin';
+export { createDefaultStdIo } from './transport-default';
 
 interface PendingPlugin {
   fn: Plugin<unknown>;
@@ -42,7 +46,9 @@ export interface McpServerBuilder {
 
   use(middleware: Middleware): McpServerBuilder;
   register<T>(plugin: Plugin<T>, options?: T): McpServerBuilder;
+  transport(transport: Transport): McpServerBuilder;
   build(): McpRuntimeBundle;
+  listen(options?: { signal?: AbortSignal }): Promise<void>;
 }
 
 export interface McpRuntimeBundle {
@@ -57,6 +63,10 @@ class McpServerBuilderImpl implements McpServerBuilder {
   private readonly pendingResources: ResourceSpec[] = [];
   private readonly pendingMiddlewares: Middleware[] = [];
   private readonly pendingPlugins: PendingPlugin[] = [];
+  private selectedTransport?: Transport;
+  private builtBundle?: McpRuntimeBundle;
+  private hasListenBeenCalled = false;
+  private isExecutingPlugins = false;
 
   tool<I, O>(name: string, definition: Omit<ToolSpec<I, O>, 'name'>): McpServerBuilder {
     const tool: ToolSpec<I, O> = {
@@ -108,9 +118,54 @@ class McpServerBuilderImpl implements McpServerBuilder {
     return this;
   }
 
+  transport(transport: Transport): McpServerBuilder {
+    if (this.selectedTransport) {
+      throw new Error('Transport can only be set once');
+    }
+    this.selectedTransport = transport;
+    return this;
+  }
+
+  async listen(options?: { signal?: AbortSignal }): Promise<void> {
+    if (this.hasListenBeenCalled) {
+      throw new LifecycleError('listen()', 'method can only be called once');
+    }
+    this.hasListenBeenCalled = true;
+
+    if (!this.builtBundle) {
+      this.builtBundle = this.build();
+    }
+
+    const transport = this.selectedTransport || createDefaultStdIo();
+
+    const handleAbort = () => {
+      if (transport.stop) {
+        transport.stop().catch(console.error);
+      }
+    };
+
+    if (options?.signal) {
+      options.signal.addEventListener('abort', handleAbort);
+    }
+
+    try {
+      await transport.start(this.builtBundle.invoke);
+    } finally {
+      if (options?.signal) {
+        options.signal.removeEventListener('abort', handleAbort);
+      }
+    }
+  }
+
   build(): McpRuntimeBundle {
-    for (const pluginEntry of this.pendingPlugins) {
-      pluginEntry.fn(this, pluginEntry.options);
+    this.isExecutingPlugins = true;
+    try {
+      for (const pluginEntry of this.pendingPlugins) {
+        const protectedBuilder = this.createProtectedBuilder();
+        pluginEntry.fn(protectedBuilder, pluginEntry.options);
+      }
+    } finally {
+      this.isExecutingPlugins = false;
     }
 
     this.pendingMiddlewares.push(errorWrapperMiddleware);
@@ -169,6 +224,23 @@ class McpServerBuilderImpl implements McpServerBuilder {
     const wrappedInvoker = composeMiddlewares(this.pendingMiddlewares, coreInvoker);
 
     return { registry, runtime, invoke: wrappedInvoker };
+  }
+
+  private createProtectedBuilder(): McpServerBuilder {
+    return {
+      tool: this.tool.bind(this),
+      prompt: this.prompt.bind(this),
+      resource: this.resource.bind(this),
+      use: this.use.bind(this),
+      register: this.register.bind(this),
+      transport: this.transport.bind(this),
+      build: () => {
+        throw new LifecycleError('build()', 'plugins cannot call build() during execution');
+      },
+      listen: () => {
+        throw new LifecycleError('listen()', 'plugins cannot call listen() during execution');
+      },
+    };
   }
 }
 

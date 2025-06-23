@@ -59,3 +59,11 @@ export class NameConflictError extends RuntimeError {
     super(`${entityType} with name '${name}' already exists in registry`);
   }
 }
+
+export class LifecycleError extends RuntimeError {
+  readonly code = 'LIFECYCLE_ERROR';
+
+  constructor(operation: string, reason: string) {
+    super(`Lifecycle violation: ${operation} - ${reason}`);
+  }
+}

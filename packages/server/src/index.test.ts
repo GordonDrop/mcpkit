@@ -1,3 +1,4 @@
+import { LifecycleError } from '@mcpkit/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createMcpServer, type Middleware, type Plugin, schema, z } from './index';
 
@@ -428,6 +429,182 @@ describe('@mcpkit/server', () => {
 
       results.forEach((result, i) => {
         expect(result.content).toBe(`concurrent-result-input-${i}`);
+      });
+    });
+  });
+
+  describe('Lifecycle Management', () => {
+    describe('Duplicate listen() prevention', () => {
+      it('should throw LifecycleError when listen() is called twice', async () => {
+        const server = createMcpServer().tool('test', {
+          input: schema(z.string()),
+          output: schema(z.string()),
+          handler: async (input) => input,
+        });
+
+        const abortController = new AbortController();
+
+        // Start first listen() call
+        const firstListenPromise = server.listen({ signal: abortController.signal });
+
+        // Immediately abort to prevent hanging
+        abortController.abort();
+
+        // Wait for first listen to complete
+        await firstListenPromise;
+
+        // Second listen() call should throw LifecycleError
+        await expect(server.listen()).rejects.toThrow(LifecycleError);
+        await expect(server.listen()).rejects.toThrow(
+          'Lifecycle violation: listen() - method can only be called once',
+        );
+      });
+
+      it('should throw LifecycleError even if first listen() failed', async () => {
+        const server = createMcpServer().tool('test', {
+          input: schema(z.string()),
+          output: schema(z.string()),
+          handler: async (input) => input,
+        });
+
+        // First listen() call that will fail due to invalid transport
+        const mockTransport = {
+          name: 'stdio' as const,
+          start: async () => {
+            throw new Error('Transport failed');
+          },
+        };
+
+        server.transport(mockTransport);
+
+        // First listen() should fail
+        await expect(server.listen()).rejects.toThrow('Transport failed');
+
+        // Second listen() should still throw LifecycleError
+        await expect(server.listen()).rejects.toThrow(LifecycleError);
+      });
+    });
+
+    describe('Plugin build() prevention', () => {
+      it('should throw LifecycleError when plugin calls build()', () => {
+        const buildCallingPlugin: Plugin = (srv) => {
+          srv.tool('test-tool', {
+            input: schema(z.string()),
+            output: schema(z.string()),
+            handler: async (input) => input,
+          });
+
+          // This should throw LifecycleError
+          srv.build();
+        };
+
+        expect(() => {
+          createMcpServer().register(buildCallingPlugin).build();
+        }).toThrow(LifecycleError);
+
+        expect(() => {
+          createMcpServer().register(buildCallingPlugin).build();
+        }).toThrow('Lifecycle violation: build() - plugins cannot call build() during execution');
+      });
+
+      it('should throw LifecycleError when plugin calls listen()', () => {
+        const listenCallingPlugin: Plugin = (srv) => {
+          srv.tool('test-tool', {
+            input: schema(z.string()),
+            output: schema(z.string()),
+            handler: async (input) => input,
+          });
+
+          // This should throw LifecycleError
+          srv.listen();
+        };
+
+        expect(() => {
+          createMcpServer().register(listenCallingPlugin).build();
+        }).toThrow(LifecycleError);
+
+        expect(() => {
+          createMcpServer().register(listenCallingPlugin).build();
+        }).toThrow('Lifecycle violation: listen() - plugins cannot call listen() during execution');
+      });
+
+      it('should allow plugins to use all other builder methods', () => {
+        const validPlugin: Plugin = (srv) => {
+          srv.tool('plugin-tool', {
+            input: schema(z.string()),
+            output: schema(z.string()),
+            handler: async (input) => `plugin: ${input}`,
+          });
+
+          srv.prompt('plugin-prompt', 'Hello {{name}}!', {
+            params: schema(z.object({ name: z.string() })),
+          });
+
+          srv.resource('plugin-resource', 'file://plugin.txt');
+
+          srv.use((next) => async (ctx) => {
+            const result = await next(ctx);
+            return { content: `plugin-middleware: ${result.content}` };
+          });
+
+          srv.register((innerSrv) => {
+            innerSrv.tool('nested-tool', {
+              input: schema(z.string()),
+              output: schema(z.string()),
+              handler: async (input) => `nested: ${input}`,
+            });
+          });
+        };
+
+        expect(() => {
+          const server = createMcpServer().register(validPlugin).build();
+          expect(server.registry.hasTool('plugin-tool')).toBe(true);
+          expect(server.registry.hasPrompt('plugin-prompt')).toBe(true);
+          expect(server.registry.hasResource('plugin-resource')).toBe(true);
+          expect(server.registry.hasTool('nested-tool')).toBe(true);
+        }).not.toThrow();
+      });
+    });
+
+    describe('Error message consistency', () => {
+      it('should have consistent LifecycleError codes and messages for duplicate listen()', async () => {
+        const server = createMcpServer();
+
+        // First listen() call
+        const abortController = new AbortController();
+        const listenPromise = server.listen({ signal: abortController.signal });
+        abortController.abort();
+
+        // Wait for first listen to complete
+        await listenPromise;
+
+        // Test duplicate listen() error
+        try {
+          await server.listen();
+          expect.fail('Expected LifecycleError to be thrown');
+        } catch (error) {
+          expect(error).toBeInstanceOf(LifecycleError);
+          expect((error as LifecycleError).code).toBe('LIFECYCLE_ERROR');
+          expect((error as LifecycleError).message).toContain('Lifecycle violation');
+          expect((error as LifecycleError).message).toContain('listen()');
+        }
+      });
+
+      it('should have consistent LifecycleError codes and messages for plugin build()', () => {
+        // Test plugin build() error
+        const buildPlugin: Plugin = (srv) => {
+          srv.build(); // This should throw
+        };
+
+        try {
+          createMcpServer().register(buildPlugin).build();
+          expect.fail('Expected LifecycleError to be thrown');
+        } catch (error) {
+          expect(error).toBeInstanceOf(LifecycleError);
+          expect((error as LifecycleError).code).toBe('LIFECYCLE_ERROR');
+          expect((error as LifecycleError).message).toContain('Lifecycle violation');
+          expect((error as LifecycleError).message).toContain('build()');
+        }
       });
     });
   });

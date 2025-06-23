@@ -36,6 +36,9 @@
   "peerDependencies": {
     "@mcpkit/core": "workspace:^"
   },
+  "dependencies": {
+    "@mcpkit/transport-stdio": "workspace:^"
+  },
   "devDependencies": {
     "@mcpkit/core": "workspace:^",
     "typescript": "^5.0.0",
