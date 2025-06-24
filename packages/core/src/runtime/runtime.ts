@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { URL } from 'node:url';
 import type { ExecutionCtx } from '../contracts/tool';
+import type { Manifest } from '../protocol-bridge';
+import { renderPrompt } from '../protocol-bridge';
 import {
   ExecutionFailure,
   InvalidInputError,
@@ -14,13 +16,25 @@ export interface McpRuntime {
   executeTool<I, O>(name: string, input: unknown): Promise<O>;
   renderPrompt<P>(name: string, params: unknown): Promise<string>;
   getResource(name: string): Promise<string>;
+  getManifest?(): Manifest | undefined;
+  setManifest?(manifest: Manifest): void;
 }
 
 export class DefaultMcpRuntime implements McpRuntime {
+  private manifest?: Manifest;
+
   constructor(
     private readonly registry: Registry,
     private readonly executionCtx: ExecutionCtx,
   ) {}
+
+  setManifest(manifest: Manifest): void {
+    this.manifest = manifest;
+  }
+
+  getManifest(): Manifest | undefined {
+    return this.manifest;
+  }
 
   async executeTool<I, O>(name: string, input: unknown): Promise<O> {
     const { logger } = this.executionCtx;
@@ -74,7 +88,8 @@ export class DefaultMcpRuntime implements McpRuntime {
         validatedParams = params as P;
       }
 
-      const renderedText = this.renderTemplate(prompt.template, validatedParams);
+      const templateRenderer = renderPrompt(prompt.template);
+      const renderedText = templateRenderer(validatedParams as Record<string, unknown>);
 
       logger.info({ prompt: name }, 'Rendering completed successfully');
       return renderedText;
@@ -130,18 +145,6 @@ export class DefaultMcpRuntime implements McpRuntime {
 
       throw error;
     }
-  }
-
-  private renderTemplate(template: string, params: unknown): string {
-    if (!params || typeof params !== 'object') {
-      return template;
-    }
-
-    const paramObj = params as Record<string, unknown>;
-    return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-      const value = paramObj[key];
-      return value !== undefined ? String(value) : match;
-    });
   }
 
   private async loadResource(uri: string): Promise<string> {
