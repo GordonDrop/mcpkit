@@ -34,7 +34,8 @@
   },
   "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/protocol#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "github:modelcontextprotocol/typescript-sdk#c40193933a43b61d40e616b7ab513e87b3d978de"
+    "@modelcontextprotocol/sdk": "github:modelcontextprotocol/typescript-sdk#c40193933a43b61d40e616b7ab513e87b3d978de",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -27,9 +27,9 @@ import { createMcpServer, schema, z } from '@mcpkit/server';
 
 export default createMcpServer()
   .tool('test', {
-    input: schema(z.string()),
-    output: schema(z.string()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.string() })),
+    output: schema(z.object({ output: z.string() })),
+    handler: async ({ input }) => ({ output: input }),
   });
 `;
 
@@ -58,9 +58,9 @@ import { createMcpServer, schema, z } from '@mcpkit/server';
 
 export default createMcpServer()
   .tool('test', {
-    input: schema(z.string()),
-    output: schema(z.string()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.string() })),
+    output: schema(z.object({ output: z.string() })),
+    handler: async ({ input }) => ({ output: input }),
   });
 `;
 
@@ -92,9 +92,9 @@ import { createMcpServer, schema, z } from '@mcpkit/server';
 
 export default createMcpServer()
   .tool('original', {
-    input: schema(z.string()),
-    output: schema(z.string()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.string() })),
+    output: schema(z.object({ output: z.string() })),
+    handler: async ({ input }) => ({ output: input }),
   });
 `;
 
@@ -103,14 +103,14 @@ import { createMcpServer, schema, z } from '@mcpkit/server';
 
 export default createMcpServer()
   .tool('original', {
-    input: schema(z.string()),
-    output: schema(z.string()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.string() })),
+    output: schema(z.object({ output: z.string() })),
+    handler: async ({ input }) => ({ output: input }),
   })
   .tool('new-tool', {
-    input: schema(z.number()),
-    output: schema(z.number()),
-    handler: async (input) => input * 2,
+    input: schema(z.object({ input: z.number() })),
+    output: schema(z.object({ output: z.number() })),
+    handler: async ({ input }) => ({ output: input * 2 }),
   });
 `;
 
@@ -146,14 +146,14 @@ import { createMcpServer, schema, z } from '@mcpkit/server';
 
 export default createMcpServer()
   .tool('keep', {
-    input: schema(z.string()),
-    output: schema(z.string()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.string() })),
+    output: schema(z.object({ output: z.string() })),
+    handler: async ({ input }) => ({ output: input }),
   })
   .tool('remove', {
-    input: schema(z.number()),
-    output: schema(z.number()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.number() })),
+    output: schema(z.object({ output: z.number() })),
+    handler: async ({ input }) => ({ output: input }),
   });
 `;
 
@@ -162,9 +162,9 @@ import { createMcpServer, schema, z } from '@mcpkit/server';
 
 export default createMcpServer()
   .tool('keep', {
-    input: schema(z.string()),
-    output: schema(z.string()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.string() })),
+    output: schema(z.object({ output: z.string() })),
+    handler: async ({ input }) => ({ output: input }),
   });
 `;
 
@@ -200,9 +200,9 @@ import { createMcpServer, schema, z } from '@mcpkit/server';
 
 export default createMcpServer()
   .tool('test', {
-    input: schema(z.string()),
-    output: schema(z.string()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.string() })),
+    output: schema(z.object({ output: z.string() })),
+    handler: async ({ input }) => ({ output: input }),
   });
 `;
 
@@ -211,9 +211,9 @@ import { createMcpServer, schema, z } from '@mcpkit/server';
 
 export default createMcpServer()
   .tool('test', {
-    input: schema(z.number()),
-    output: schema(z.number()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.number() })),
+    output: schema(z.object({ output: z.number() })),
+    handler: async ({ input }) => ({ output: input }),
   });
 `;
 

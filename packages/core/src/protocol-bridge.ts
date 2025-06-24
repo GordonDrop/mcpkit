@@ -74,24 +74,4 @@ export interface Manifest {
   implementation: SDKImplementation;
 }
 
-export function validateManifest(manifest: Manifest): boolean {
-  try {
-    // Basic validation - check required fields exist
-    if (!manifest || typeof manifest !== 'object') return false;
-    if (!Array.isArray(manifest.tools)) return false;
-    if (!Array.isArray(manifest.prompts)) return false;
-    if (!Array.isArray(manifest.resources)) return false;
-    if (!manifest.capabilities || typeof manifest.capabilities !== 'object') return false;
-    if (!manifest.implementation || typeof manifest.implementation !== 'object') return false;
-
-    // Validate implementation has required fields
-    if (!manifest.implementation.name || typeof manifest.implementation.name !== 'string')
-      return false;
-    if (!manifest.implementation.version || typeof manifest.implementation.version !== 'string')
-      return false;
-
-    return true;
-  } catch {
-    return false;
-  }
-}
+export { ManifestSchema, validateManifest } from '@mcpkit/protocol';

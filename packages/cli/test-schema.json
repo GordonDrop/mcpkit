@@ -1,0 +1,20 @@
+{
+  "tools": {},
+  "prompts": {},
+  "resources": {},
+  "timestamp": "2025-06-27T20:45:10.734Z",
+  "manifest": {
+    "tools": [],
+    "prompts": [],
+    "resources": [],
+    "capabilities": {
+      "tools": {},
+      "prompts": {},
+      "resources": {}
+    },
+    "implementation": {
+      "name": "mcpkit-server",
+      "version": "0.1.0"
+    }
+  }
+}

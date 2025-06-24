@@ -9,6 +9,8 @@ import deepDiff from 'deep-diff';
 const { diff } = deepDiff;
 
 import type { Manifest } from '@mcpkit/core';
+import { ManifestSchema } from '@mcpkit/core';
+import { z } from 'zod';
 import { printError } from '../utils/pretty-error.js';
 
 // Type definitions for deep-diff library
@@ -88,7 +90,8 @@ export const doctorCommand = new Command('doctor')
 async function extractSchemaSnapshot(entryPath: string): Promise<SchemaSnapshot> {
   const tempScript = `
 import { createMcpServer } from '@mcpkit/server';
-import { validateManifest } from '@mcpkit/core';
+import { validateManifest, ManifestSchema } from '@mcpkit/core';
+import { z } from 'zod';
 
 async function extractSchema() {
   try {
@@ -98,15 +101,15 @@ async function extractSchema() {
     if (module.default && typeof module.default === 'function') {
       server = module.default();
     } else if (module.default && module.default.default && typeof module.default.default.build === 'function') {
-      server = module.default.default;
+      server = module.default.default.build();
     } else if (module.default && typeof module.default.build === 'function') {
-      server = module.default;
+      server = module.default.build();
     } else if (module.default) {
       server = module.default;
     } else if (module.server) {
       server = module.server;
     } else {
-      server = createMcpServer();
+      server = createMcpServer().build();
     }
 
     let bundle;
@@ -171,9 +174,20 @@ async function extractSchema() {
       }
     }
 
-    // Validate manifest using SDK validation
-    if (!validateManifest(manifest)) {
-      throw new Error('Generated manifest failed validation');
+    // Validate manifest using SDK Zod schemas
+    try {
+      ManifestSchema.parse(manifest);
+      console.error('✓ Manifest is valid according to MCP SDK schemas');
+    } catch (error) {
+      console.error('✗ Manifest validation failed');
+      if (error instanceof z.ZodError) {
+        console.error('Validation errors:');
+        error.errors.forEach(err => {
+          const path = err.path.length > 0 ? err.path.join('.') : 'root';
+          console.error('  - ' + path + ': ' + err.message);
+        });
+      }
+      throw new Error('Generated manifest failed SDK schema validation');
     }
 
     // Convert manifest to legacy snapshot format for backward compatibility

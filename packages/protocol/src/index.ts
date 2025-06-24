@@ -5,6 +5,8 @@
  * of truth for protocol types while maintaining backward compatibility.
  */
 
+import { z } from 'zod';
+
 // Re-export canonical MCP protocol types from the official SDK
 export type {
   AudioContent,
@@ -52,6 +54,17 @@ export type {
   Tool,
   ToolAnnotations,
 } from '@modelcontextprotocol/sdk/types.js';
+
+// Import and re-export Zod schemas for validation
+import {
+  ImplementationSchema,
+  PromptSchema,
+  ResourceSchema,
+  ServerCapabilitiesSchema,
+  ToolSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+
+export { ToolSchema, PromptSchema, ResourceSchema, ServerCapabilitiesSchema, ImplementationSchema };
 
 // Create SchemaJSON type alias for schema adapter generics
 export type SchemaJSON = Record<string, unknown>;
@@ -106,25 +119,21 @@ export interface Manifest {
   };
 }
 
-// Validation utility for manifests (simple validation since SDK doesn't provide one)
+// Create a composite manifest schema using SDK components
+export const ManifestSchema = z.object({
+  tools: z.array(ToolSchema),
+  prompts: z.array(PromptSchema),
+  resources: z.array(ResourceSchema),
+  capabilities: ServerCapabilitiesSchema,
+  implementation: ImplementationSchema,
+});
+
+// Enhanced validation utility using SDK Zod schemas
 export function validateManifest(manifest: Manifest): boolean {
   try {
-    // Basic validation - check required fields exist
-    if (!manifest || typeof manifest !== 'object') return false;
-    if (!Array.isArray(manifest.tools)) return false;
-    if (!Array.isArray(manifest.prompts)) return false;
-    if (!Array.isArray(manifest.resources)) return false;
-    if (!manifest.capabilities || typeof manifest.capabilities !== 'object') return false;
-    if (!manifest.implementation || typeof manifest.implementation !== 'object') return false;
-
-    // Validate implementation has required fields
-    if (!manifest.implementation.name || typeof manifest.implementation.name !== 'string')
-      return false;
-    if (!manifest.implementation.version || typeof manifest.implementation.version !== 'string')
-      return false;
-
+    ManifestSchema.parse(manifest);
     return true;
-  } catch {
+  } catch (error) {
     return false;
   }
 }
