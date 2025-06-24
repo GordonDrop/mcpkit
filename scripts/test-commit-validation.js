@@ -40,6 +40,16 @@ const testCases = [
     description: 'Valid feat with multiple scopes including ndjson',
   },
   {
+    message: 'feat(protocol): add MCP protocol bridge layer',
+    expected: true,
+    description: 'Valid feat with protocol scope',
+  },
+  {
+    message: 'fix(protocol, core): fix protocol bridge integration',
+    expected: true,
+    description: 'Valid fix with multiple scopes including protocol',
+  },
+  {
     message: 'test(core): add unit tests for validation',
     expected: true,
     description: 'Valid test commit',
