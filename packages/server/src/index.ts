@@ -12,17 +12,17 @@ import {
   type Transport,
   z,
 } from '@mcpkit/core';
-import { composeMiddlewares } from './internal/compose';
-import { errorWrapperMiddleware } from './middleware/builtin-error-wrapper';
-import type { CallCtx, InvokeFn, Middleware } from './middleware/types';
-import type { Plugin } from './plugin/index';
-import { createDefaultStdIo } from './transport-default';
+import { composeMiddlewares } from './internal/compose.js';
+import { errorWrapperMiddleware } from './middleware/builtin-error-wrapper.js';
+import type { CallCtx, InvokeFn, Middleware } from './middleware/types.js';
+import type { Plugin } from './plugin/index.js';
+import { createDefaultStdIo } from './transport-default.js';
 
 export { schema, z };
 
-export type { Middleware } from './middleware/types';
-export type { Plugin } from './plugin';
-export { createDefaultStdIo } from './transport-default';
+export type { Middleware } from './middleware/types.js';
+export type { Plugin } from './plugin/index.js';
+export { createDefaultStdIo } from './transport-default.js';
 
 interface PendingPlugin {
   fn: Plugin<unknown>;

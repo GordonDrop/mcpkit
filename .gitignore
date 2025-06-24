@@ -15,3 +15,5 @@ pnpm-debug.log*
 .turbo
 # coverage
 coverage/
+# test fixtures (temporary test files)
+**/__tests__/fixtures/
