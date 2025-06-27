@@ -42,7 +42,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@modelcontextprotocol/sdk": "github:modelcontextprotocol/typescript-sdk#c40193933a43b61d40e616b7ab513e87b3d978de"
+      "@modelcontextprotocol/sdk": "1.13.2"
     }
   }
 }
