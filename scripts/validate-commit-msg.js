@@ -6,7 +6,7 @@
  *
  * Required format: <type>(<scope>): <description>
  * - Type: feat, fix, chore, docs, style, refactor, test, ci, etc.
- * - Scope: Must be one of the actual package names (cli, core, ndjson, server, transport-stdio)
+ * - Scope: Must be one of the actual package names (cli, core, ndjson, protocol, server, transport-stdio)
  *   or multiple scopes separated by commas
  * - Description: Brief description in any language (Russian/English acceptable)
  *
@@ -34,7 +34,7 @@ const VALID_TYPES = [
 ];
 
 // Valid package scopes based on actual packages in this project
-const VALID_SCOPES = ['cli', 'core', 'ndjson', 'server', 'transport-stdio'];
+const VALID_SCOPES = ['cli', 'core', 'ndjson', 'protocol', 'server', 'transport-stdio'];
 
 /**
  * Validates a commit message against the conventional commit format
@@ -144,6 +144,7 @@ function main() {
     console.error('  feat(core): add new function X');
     console.error('  fix(cli, server): fix error Y');
     console.error('  feat(ndjson): add NDJSON reader and writer utilities');
+    console.error('  feat(protocol): add MCP protocol bridge layer');
     console.error('  feat(ndjson,transport-stdio): integrate NDJSON with transport');
     console.error('  chore: обновить dev-зависимости');
     console.error('  docs(transport-stdio): update API documentation');

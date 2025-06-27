@@ -2,6 +2,7 @@ export * from './contracts/prompt';
 export * from './contracts/resource';
 export * from './contracts/tool';
 export * from './contracts/transport';
+export * from './protocol-bridge';
 export * from './runtime/errors';
 export * from './runtime/registry';
 export * from './runtime/runtime';

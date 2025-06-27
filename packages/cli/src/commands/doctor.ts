@@ -8,6 +8,7 @@ import deepDiff from 'deep-diff';
 
 const { diff } = deepDiff;
 
+import type { Manifest } from '@mcpkit/core';
 import { printError } from '../utils/pretty-error.js';
 
 // Type definitions for deep-diff library
@@ -45,6 +46,7 @@ interface SchemaSnapshot {
   prompts: Record<string, PromptSchema>;
   resources: Record<string, ResourceSchema>;
   timestamp: string;
+  manifest?: Manifest; // Optional manifest for future use
 }
 
 export const doctorCommand = new Command('doctor')
@@ -86,6 +88,8 @@ export const doctorCommand = new Command('doctor')
 async function extractSchemaSnapshot(entryPath: string): Promise<SchemaSnapshot> {
   const tempScript = `
 import { createMcpServer } from '@mcpkit/server';
+import { validateManifest, ManifestSchema } from '@mcpkit/core';
+import { z } from 'zod';
 
 async function extractSchema() {
   try {
@@ -95,15 +99,15 @@ async function extractSchema() {
     if (module.default && typeof module.default === 'function') {
       server = module.default();
     } else if (module.default && module.default.default && typeof module.default.default.build === 'function') {
-      server = module.default.default;
+      server = module.default.default.build();
     } else if (module.default && typeof module.default.build === 'function') {
-      server = module.default;
+      server = module.default.build();
     } else if (module.default) {
       server = module.default;
     } else if (module.server) {
       server = module.server;
     } else {
-      server = createMcpServer();
+      server = createMcpServer().build();
     }
 
     let bundle;
@@ -115,42 +119,101 @@ async function extractSchema() {
       throw new Error('Invalid server object - no build method or registry/runtime');
     }
 
-    const { registry } = bundle;
+    const { registry, runtime } = bundle;
 
+    // Try to get manifest from runtime first, fallback to registry extraction
+    let manifest = runtime.getManifest && runtime.getManifest();
+
+    if (!manifest) {
+      // Fallback: extract from registry (backward compatibility)
+      manifest = {
+        tools: [],
+        prompts: [],
+        resources: [],
+        capabilities: { tools: {}, prompts: {}, resources: {} },
+        implementation: { name: 'mcpkit-server', version: '0.1.0' }
+      };
+
+      for (const toolName of registry.getToolNames()) {
+        const tool = registry.getTool(toolName);
+        if (tool) {
+          manifest.tools.push({
+            name: tool.name,
+            description: tool.description || '',
+            inputSchema: tool.input.json(),
+          });
+        }
+      }
+
+      for (const promptName of registry.getPromptNames()) {
+        const prompt = registry.getPrompt(promptName);
+        if (prompt) {
+          manifest.prompts.push({
+            name: prompt.name,
+            description: prompt.template,
+            arguments: prompt.params ? [{
+              name: 'params',
+              description: 'Prompt parameters',
+              required: true
+            }] : [],
+          });
+        }
+      }
+
+      for (const resourceName of registry.getResourceNames()) {
+        const resource = registry.getResource(resourceName);
+        if (resource) {
+          manifest.resources.push({
+            name: resource.name,
+            uri: resource.uri,
+            description: resource.title || '',
+          });
+        }
+      }
+    }
+
+    // Validate manifest using SDK Zod schemas
+    try {
+      ManifestSchema.parse(manifest);
+      console.error('✓ Manifest is valid according to MCP SDK schemas');
+    } catch (error) {
+      console.error('✗ Manifest validation failed');
+      if (error instanceof z.ZodError) {
+        console.error('Validation errors:');
+        error.errors.forEach(err => {
+          const path = err.path.length > 0 ? err.path.join('.') : 'root';
+          console.error('  - ' + path + ': ' + err.message);
+        });
+      }
+      throw new Error('Generated manifest failed SDK schema validation');
+    }
+
+    // Convert manifest to legacy snapshot format for backward compatibility
     const tools = {};
     const prompts = {};
     const resources = {};
 
-    for (const toolName of registry.getToolNames()) {
-      const tool = registry.getTool(toolName);
-      if (tool) {
-        tools[toolName] = {
-          description: tool.description,
-          inputSchema: tool.input ? (tool.input.schema || tool.input) : null,
-          outputSchema: tool.output ? (tool.output.schema || tool.output) : null,
-        };
-      }
+    for (const tool of manifest.tools) {
+      tools[tool.name] = {
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+        outputSchema: tool.outputSchema || null,
+      };
     }
 
-    for (const promptName of registry.getPromptNames()) {
-      const prompt = registry.getPrompt(promptName);
-      if (prompt) {
-        prompts[promptName] = {
-          template: prompt.template,
-          title: prompt.title,
-          paramsSchema: prompt.params ? (prompt.params.schema || prompt.params) : null,
-        };
-      }
+    for (const prompt of manifest.prompts) {
+      prompts[prompt.name] = {
+        template: prompt.description, // Using description as template for backward compatibility
+        title: prompt.name,
+        paramsSchema: prompt.arguments && prompt.arguments.length > 0 ? prompt.arguments : null,
+      };
     }
 
-    for (const resourceName of registry.getResourceNames()) {
-      const resource = registry.getResource(resourceName);
-      if (resource) {
-        resources[resourceName] = {
-          uri: resource.uri,
-          title: resource.title,
-        };
-      }
+    for (const resource of manifest.resources) {
+      resources[resource.name] = {
+        uri: resource.uri,
+        title: resource.description,
+      };
     }
 
     console.log(JSON.stringify({
@@ -158,6 +221,7 @@ async function extractSchema() {
       prompts,
       resources,
       timestamp: new Date().toISOString(),
+      manifest: manifest, // Include full manifest for future use
     }));
   } catch (error) {
     console.error('Schema extraction error:', error.message);

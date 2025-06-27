@@ -42,6 +42,7 @@
     "tsup": "^8.0.2"
   },
   "dependencies": {
+    "@mcpkit/protocol": "workspace:*",
     "zod-to-json-schema": "^3.24.5"
   },
   "tsd": {

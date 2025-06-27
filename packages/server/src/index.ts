@@ -3,6 +3,7 @@ import {
   createMcpRuntime,
   type ExecutionCtx,
   LifecycleError,
+  type Manifest,
   type McpRuntime,
   type PromptSpec,
   type Registry,
@@ -223,7 +224,49 @@ class McpServerBuilderImpl implements McpServerBuilder {
 
     const wrappedInvoker = composeMiddlewares(this.pendingMiddlewares, coreInvoker);
 
+    const manifest = this.generateManifest();
+    if (runtime.setManifest) {
+      runtime.setManifest(manifest);
+    }
+
     return { registry, runtime, invoke: wrappedInvoker };
+  }
+
+  private generateManifest(): Manifest {
+    return {
+      tools: this.pendingTools.map((tool) => ({
+        name: tool.name,
+        description: tool.description || '',
+        inputSchema: tool.input.json() as any,
+      })) as any,
+      prompts: this.pendingPrompts.map((prompt) => ({
+        name: prompt.name,
+        description: prompt.template,
+        arguments: prompt.params
+          ? [
+              {
+                name: 'params',
+                description: 'Prompt parameters',
+                required: true,
+              },
+            ]
+          : [],
+      })) as any,
+      resources: this.pendingResources.map((resource) => ({
+        name: resource.name,
+        uri: resource.uri,
+        description: resource.title || '',
+      })) as any,
+      capabilities: {
+        tools: {},
+        prompts: {},
+        resources: {},
+      } as any,
+      implementation: {
+        name: 'mcpkit-server',
+        version: '0.1.0',
+      } as any,
+    };
   }
 
   private createProtectedBuilder(): McpServerBuilder {

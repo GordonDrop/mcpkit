@@ -64,9 +64,9 @@ import { createMcpServer, schema, z } from '@mcpkit/server';
 
 export default createMcpServer()
   .tool('test-tool', {
-    input: schema(z.string()),
-    output: schema(z.string()),
-    handler: async (input) => input,
+    input: schema(z.object({ input: z.string() })),
+    output: schema(z.object({ output: z.string() })),
+    handler: async ({ input }) => ({ output: input }),
   });
 `;
 

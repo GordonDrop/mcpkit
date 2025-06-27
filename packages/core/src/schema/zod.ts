@@ -8,7 +8,7 @@ export class ZodSchema<T> implements Schema<T> {
   parse(d: unknown) {
     return this.zod.parse(d) as T;
   }
-  json() {
+  json(): unknown {
     return zodToJsonSchema(this.zod);
   }
 }

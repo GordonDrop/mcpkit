@@ -1,13 +1,10 @@
 {
-  "name": "@mcpkit/cli",
-  "version": "0.1.1",
-  "description": "CLI tools for McpKit development and validation",
+  "name": "@mcpkit/protocol",
+  "version": "0.0.0-dev",
+  "description": "Protocol bridge layer for MCP TypeScript SDK integration",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "mcp": "./dist/index.js"
-  },
   "exports": {
     ".": "./dist/index.js"
   },
@@ -21,41 +18,28 @@
   },
   "keywords": [
     "mcpkit",
-    "cli",
-    "development",
-    "validation",
-    "mcp"
+    "protocol",
+    "mcp",
+    "bridge"
   ],
   "author": "Konstantin Simanov",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/GordonDrop/mcpkit.git",
-    "directory": "packages/cli"
+    "directory": "packages/protocol"
   },
   "bugs": {
     "url": "https://github.com/GordonDrop/mcpkit/issues"
   },
-  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/cli#readme",
-  "peerDependencies": {
-    "@mcpkit/server": "^0.1.0"
-  },
+  "homepage": "https://github.com/GordonDrop/mcpkit/tree/main/packages/protocol#readme",
   "dependencies": {
-    "@mcpkit/core": "workspace:^",
-    "chalk": "^5.3.0",
-    "chokidar": "^3.5.3",
-    "commander": "^12.0.0",
-    "deep-diff": "^1.0.2",
-    "pretty-ms": "^8.0.0",
-    "tsx": "^4.20.3",
+    "@modelcontextprotocol/sdk": "github:modelcontextprotocol/typescript-sdk#c40193933a43b61d40e616b7ab513e87b3d978de",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@mcpkit/server": "workspace:^",
-    "@types/deep-diff": "^1.0.2",
     "@types/node": "^20.0.0",
     "@vitest/coverage-v8": "1.6.0",
-    "execa": "^8.0.1",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
   }
