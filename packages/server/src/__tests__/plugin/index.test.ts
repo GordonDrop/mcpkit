@@ -85,7 +85,7 @@ describe('Plugin System', () => {
     it('should pass options to plugins correctly', () => {
       let receivedOptions: any = null;
 
-      const optionsPlugin: Plugin<{ test: string; number: number }> = (srv, opts) => {
+      const optionsPlugin: Plugin<{ test: string; number: number }> = (_srv, opts) => {
         receivedOptions = opts;
       };
 

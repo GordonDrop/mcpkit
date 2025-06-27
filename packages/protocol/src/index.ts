@@ -133,7 +133,7 @@ export function validateManifest(manifest: Manifest): boolean {
   try {
     ManifestSchema.parse(manifest);
     return true;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

@@ -13,8 +13,8 @@ import {
 import type { Registry } from './registry';
 
 export interface McpRuntime {
-  executeTool<I, O>(name: string, input: unknown): Promise<O>;
-  renderPrompt<P>(name: string, params: unknown): Promise<string>;
+  executeTool<_I, O>(name: string, input: unknown): Promise<O>;
+  renderPrompt<_P>(name: string, params: unknown): Promise<string>;
   getResource(name: string): Promise<string>;
   getManifest?(): Manifest | undefined;
   setManifest?(manifest: Manifest): void;

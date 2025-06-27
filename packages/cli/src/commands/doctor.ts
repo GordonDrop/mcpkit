@@ -9,8 +9,6 @@ import deepDiff from 'deep-diff';
 const { diff } = deepDiff;
 
 import type { Manifest } from '@mcpkit/core';
-import { ManifestSchema } from '@mcpkit/core';
-import { z } from 'zod';
 import { printError } from '../utils/pretty-error.js';
 
 // Type definitions for deep-diff library
